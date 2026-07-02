@@ -10,6 +10,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "AbilitySystemComponent.h"
+#include "LMSAttributeSet.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -50,8 +52,47 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
+	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	// Create the Ability System Component and Attribute Set
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+	AttributeSet = CreateDefaultSubobject<ULMSAttributeSet>(TEXT("AttributeSet"));
+}
+
+UAbilitySystemComponent* ALMS_TeamProjectCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+void ALMS_TeamProjectCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		GiveDefaultAbilities();
+	}
+}
+
+void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : DefaultAbilities)
+	{
+		if (AbilityClass)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, this));
+		}
+	}
 }
 
 void ALMS_TeamProjectCharacter::BeginPlay()

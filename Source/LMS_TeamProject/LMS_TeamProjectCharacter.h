@@ -5,20 +5,36 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "AbilitySystemInterface.h"
 #include "LMS_TeamProjectCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+class UAbilitySystemComponent;
+class ULMSAttributeSet;
+class UGameplayAbility;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class ALMS_TeamProjectCharacter : public ACharacter
+class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
+
+	/** Ability System Component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	UAbilitySystemComponent* AbilitySystemComponent;
+
+	/** Attribute Set */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	ULMSAttributeSet* AttributeSet;
+
+	/** Abilities granted to this character on possession */
+	UPROPERTY(EditDefaultsOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -46,7 +62,10 @@ class ALMS_TeamProjectCharacter : public ACharacter
 
 public:
 	ALMS_TeamProjectCharacter();
-	
+
+	//~ Begin IAbilitySystemInterface Interface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//~ End IAbilitySystemInterface Interface
 
 protected:
 
@@ -55,14 +74,19 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
+
+	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
+	void GiveDefaultAbilities();
 
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+
 	// To add mapping context
 	virtual void BeginPlay();
+
+	// Initialize the ability system's actor info once we have a controller
+	virtual void PossessedBy(AController* NewController) override;
 
 public:
 	/** Returns CameraBoom subobject **/
