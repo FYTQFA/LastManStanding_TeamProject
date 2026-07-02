@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -68,7 +68,6 @@ public:
 	//~ End IAbilitySystemInterface Interface
 
 protected:
-
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
@@ -78,15 +77,14 @@ protected:
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
 
-protected:
+	/** 서버/클라 공통 ASC 초기화 */
+	void InitAbilityActorInfo();
+
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	// To add mapping context
-	virtual void BeginPlay();
-
-	// Initialize the ability system's actor info once we have a controller
+	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 public:
 	/** Returns CameraBoom subobject **/

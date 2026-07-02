@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LMS_TeamProjectCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "AbilitySystemComponent.h"
 #include "LMSAttributeSet.h"
+#include "LMS_TeamProjectPlayerState.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -55,12 +56,9 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
-	// Create the Ability System Component and Attribute Set
-	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	AttributeSet = CreateDefaultSubobject<ULMSAttributeSet>(TEXT("AttributeSet"));
+
+
 }
 
 UAbilitySystemComponent* ALMS_TeamProjectCharacter::GetAbilitySystemComponent() const
@@ -72,11 +70,35 @@ void ALMS_TeamProjectCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		InitAbilityActorInfo();
 		GiveDefaultAbilities();
+	
+}
+
+void ALMS_TeamProjectCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// 클라: PlayerState가 복제돼서 도착한 시점
+	InitAbilityActorInfo();
+}
+
+void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
+{
+	// PlayerState 가져오기
+	ALMS_TeamProjectPlayerState* PS = GetPlayerState<ALMS_TeamProjectPlayerState>();
+	if (!PS)
+	{
+		return;   // 아직 준비 안 됨
 	}
+
+	// PlayerState의 ASC/AttributeSet을 캐릭터에 캐싱
+	AbilitySystemComponent = PS->GetAbilitySystemComponent();
+	AttributeSet = PS->GetAttributeSet();
+
+	// ★ 핵심: Owner=PlayerState, Avatar=이 캐릭터
+	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
 }
 
 void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
@@ -108,6 +130,7 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
