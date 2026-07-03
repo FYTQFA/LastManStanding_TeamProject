@@ -6,6 +6,9 @@
 #include "BehaviorTree/Services/BTService_BlackboardBase.h"
 #include "BTService_TargetDistance.generated.h"
 
+class AAIController;
+class UBlackboardComponent;
+
 /**
  * Reads the "Target" object value from the Blackboard, measures the distance between
  * the controlled pawn and the target, and writes whether that distance is within
@@ -23,6 +26,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float DistanceThreshold = 100.f;
 
+	UPROPERTY()
+	TObjectPtr<AAIController> AIController;
+
+	UPROPERTY()
+	TObjectPtr<UBlackboardComponent> BlackboardComp;
+
+	float CoolTime = 0.f;
+	//float MaxCoolTime = 0.f;
+
 protected:
+	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

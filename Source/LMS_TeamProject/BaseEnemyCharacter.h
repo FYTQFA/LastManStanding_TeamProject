@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "EnemyTableRow.h"
 #include "BaseEnemyCharacter.generated.h"
 
 UCLASS()
@@ -27,6 +28,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	int UniqueID;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
 	TObjectPtr<class UAnimMontage> AttackMontage;
+
+	/** Looks up this enemy's row via UDataTableSubSystem using UniqueID. Returns nullptr if not found. */
+	const FEnemyTableRow* GetEnemyData() const;
 };

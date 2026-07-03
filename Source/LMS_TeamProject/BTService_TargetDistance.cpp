@@ -10,17 +10,44 @@ UBTService_TargetDistance::UBTService_TargetDistance()
 	NodeName = TEXT("Target Distance");
 	Interval = 0.2f;
 	RandomDeviation = 0.05f;
+	bCreateNodeInstance = true;
+	bNotifyBecomeRelevant = true;
+}
+
+void UBTService_TargetDistance::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	Super::OnBecomeRelevant(OwnerComp, NodeMemory);
+
+	AIController = OwnerComp.GetAIOwner();
+	BlackboardComp = OwnerComp.GetBlackboardComponent();
+	if (!BlackboardComp)
+	{
+		return;
+	}
+
+	CoolTime = BlackboardComp->GetValueAsFloat(TEXT("CoolTime"));
+	/*MaxCoolTime = BlackboardComp->GetValueAsFloat(TEXT("MaxCoolTime"));
+
+	if (MaxCoolTime <= 0.f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UBTService_TargetDistance::OnBecomeRelevant - MaxCoolTime is %.2f; the 'MaxCoolTime' Blackboard key may not have been set."), MaxCoolTime);
+	}*/
 }
 
 void UBTService_TargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	AAIController* AIController = OwnerComp.GetAIOwner();
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	APawn* ControlledPawn = AIController ? AIController->GetPawn() : nullptr;
-	if (!ControlledPawn || !BlackboardComp)
+
+	CoolTime -= DeltaSeconds;
+
+	if (!ControlledPawn || !BlackboardComp || CoolTime > 0)
 	{
+		if (BlackboardComp)
+		{
+			BlackboardComp->SetValueAsFloat(TEXT("CoolTime"), CoolTime);
+		}
 		return;
 	}
 
@@ -32,7 +59,12 @@ void UBTService_TargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 
 	const float Distance = FVector::Dist(ControlledPawn->GetActorLocation(), TargetActor->GetActorLocation());
 	const bool bInRange = Distance <= DistanceThreshold;
-	
+
 	BlackboardComp->SetValueAsBool(GetSelectedBlackboardKey(), bInRange);
+
+	/*if (bInRange)
+	{
+		BlackboardComp->SetValueAsFloat(TEXT("CoolTime"), MaxCoolTime);
+	}*/
 }
 

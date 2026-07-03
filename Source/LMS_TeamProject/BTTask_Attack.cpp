@@ -7,6 +7,7 @@
 #include "BaseEnemyCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_Attack::UBTTask_Attack()
 {
@@ -39,11 +40,43 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	return EBTNodeResult::InProgress;
 }
 
+EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	ABaseEnemyCharacter* Character = AIController ? Cast<ABaseEnemyCharacter>(AIController->GetPawn()) : nullptr;
+	UAnimInstance* AnimInstance = Character ? Character->GetMesh()->GetAnimInstance() : nullptr;
+
+	if (!AnimInstance || !Character->AttackMontage)
+	{
+		return EBTNodeResult::Aborted;
+	}
+
+	bIsAborting = true;
+	AnimInstance->Montage_Stop(0.f, Character->AttackMontage);
+
+	return EBTNodeResult::InProgress;
+}
+
 void UBTTask_Attack::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (UBehaviorTreeComponent* BTComp = OwningComp.Get())
 	{
-		FinishLatentTask(*BTComp, bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
+		if (UBlackboardComponent* BlackboardComp = BTComp->GetBlackboardComponent())
+		{
+			const float MaxCoolTime = BlackboardComp->GetValueAsFloat(TEXT("MaxCoolTime"));
+			BlackboardComp->SetValueAsFloat(TEXT("CoolTime"), MaxCoolTime);
+			BlackboardComp->SetValueAsBool(TEXT("CanAttack"), false);
+		}
+
+		if (bIsAborting)
+		{
+			bIsAborting = false;
+			FinishLatentAbort(*BTComp);
+		}
+		else
+		{
+			FinishLatentTask(*BTComp, bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded);
+		}
 	}
 }
 

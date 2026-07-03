@@ -2,6 +2,8 @@
 
 
 #include "BaseEnemyCharacter.h"
+#include "Engine/GameInstance.h"
+#include "DataTableSubSystem.h"
 
 // Sets default values
 ABaseEnemyCharacter::ABaseEnemyCharacter()
@@ -15,7 +17,6 @@ ABaseEnemyCharacter::ABaseEnemyCharacter()
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -30,6 +31,13 @@ void ABaseEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+const FEnemyTableRow* ABaseEnemyCharacter::GetEnemyData() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UDataTableSubSystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UDataTableSubSystem>() : nullptr;
+	return DataSubsystem ? DataSubsystem->GetEnemyData(UniqueID) : nullptr;
 }
 
 
