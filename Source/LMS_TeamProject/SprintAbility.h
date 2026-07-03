@@ -35,6 +35,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Sprint")
 	TSubclassOf<UGameplayEffect> SprintEffectClass;
 
+	/** 스태미나 소모 GE (BP에서 GE_SprintCost) */
+	UPROPERTY(EditDefaultsOnly, Category = "Sprint")
+	TSubclassOf<UGameplayEffect> SprintCostEffectClass;
+
 	/** 적용된 GE 핸들 (제거용 저장) */
 	FActiveGameplayEffectHandle ActiveSprintHandle;
+
+	/** 적용된 GE 핸들 (제거용 저장) */
+	FActiveGameplayEffectHandle ActiveCostHandle;
+
+	/** 스태미나 감시용 */
+	void OnStaminaChanged(const FOnAttributeChangeData& Data);
+	FDelegateHandle StaminaChangedDelegateHandle;
 };

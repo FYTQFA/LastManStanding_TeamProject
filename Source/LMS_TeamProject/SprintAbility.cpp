@@ -1,5 +1,6 @@
 ﻿#include "SprintAbility.h"
 #include "AbilitySystemComponent.h"
+#include "LMSAttributeSet.h"
 
 USprintAbility::USprintAbility()
 {
@@ -40,7 +41,28 @@ void USprintAbility::ActivateAbility(
 			ActiveSprintHandle =
 				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
+
+		// ② 스태미나 소모
+		if (SprintCostEffectClass)
+		{
+			FGameplayEffectSpecHandle CostSpec =
+				ASC->MakeOutgoingSpec(SprintCostEffectClass, 1.f, Context);
+			if (CostSpec.IsValid())
+			{
+				ActiveCostHandle = ASC->ApplyGameplayEffectSpecToSelf(*CostSpec.Data.Get());
+			}
+		}
 	}
+
+	// ③ 스태미나 감시 구독 (서버/클라 모두)
+	if (const ULMSAttributeSet* AS = ASC->GetSet<ULMSAttributeSet>())
+	{
+		StaminaChangedDelegateHandle =
+			ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute())
+			.AddUObject(this, &USprintAbility::OnStaminaChanged);
+	}
+
+	
 }
 
 void USprintAbility::InputReleased(
@@ -59,16 +81,44 @@ void USprintAbility::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// GE 제거 (서버에서 적용했으니 서버에서 제거)
-	if (HasAuthority(&ActivationInfo) && ActiveSprintHandle.IsValid())
+	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
+
+	// 스태미나 구독 해제
+	if (ASC && StaminaChangedDelegateHandle.IsValid())
 	{
-		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
-		if (ASC)
+		if (const ULMSAttributeSet* AS = ASC->GetSet<ULMSAttributeSet>())
+		{
+			ASC->GetGameplayAttributeValueChangeDelegate(AS->GetStaminaAttribute())
+				.Remove(StaminaChangedDelegateHandle);
+		}
+		StaminaChangedDelegateHandle.Reset();
+	}
+	// GE 제거 (서버에서 적용했으니 서버에서 제거)
+	if (HasAuthority(&ActivationInfo) && ASC)
+	{
+		if (ActiveSprintHandle.IsValid())
 		{
 			ASC->RemoveActiveGameplayEffect(ActiveSprintHandle);
+			ActiveSprintHandle = FActiveGameplayEffectHandle();
 		}
-		ActiveSprintHandle = FActiveGameplayEffectHandle();
+		if (ActiveCostHandle.IsValid())
+		{
+			ASC->RemoveActiveGameplayEffect(ActiveCostHandle);
+			ActiveCostHandle = FActiveGameplayEffectHandle();
+		}
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void USprintAbility::OnStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	// 스태미나 0 이하 → Sprint 종료
+	if (Data.NewValue <= 0.f)
+	{
+		if (IsActive())
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}
+	}
 }

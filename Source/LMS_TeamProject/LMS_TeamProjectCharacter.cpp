@@ -14,6 +14,7 @@
 #include "LMSAttributeSet.h"
 #include "LMS_TeamProjectPlayerState.h"
 #include "LMSGameplayAbility.h"
+#include "GameplayEffect.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -73,7 +74,7 @@ void ALMS_TeamProjectCharacter::PossessedBy(AController* NewController)
 
 		InitAbilityActorInfo();
 		GiveDefaultAbilities();
-	
+		ApplyDefaultEffects();
 }
 
 void ALMS_TeamProjectCharacter::OnRep_PlayerState()
@@ -137,6 +138,33 @@ void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
 
 		AbilitySystemComponent->GiveAbility(
 			FGameplayAbilitySpec(AbilityClass, 1, InputID, this));
+	}
+}
+
+void ALMS_TeamProjectCharacter::ApplyDefaultEffects()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	for (const TSubclassOf<UGameplayEffect>& EffectClass : DefaultEffects)
+	{
+		if (!EffectClass)
+		{
+			continue;
+		}
+
+		FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+		Context.AddSourceObject(this);
+
+		FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, Context);
+
+		if (Spec.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+		}
+
 	}
 }
 

@@ -37,6 +37,9 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<UGameplayEffect>> DefaultEffects;
+
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -85,6 +88,8 @@ protected:
 
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
+	/** Applies DefaultEffects to self. Server only. */
+	void ApplyDefaultEffects();
 
 	void OnSpeedChanged(const struct FOnAttributeChangeData& Data);
 
