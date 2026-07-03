@@ -2,6 +2,7 @@
 
 #include "LMS_TeamProjectGameMode.h"
 #include "LMS_TeamProjectCharacter.h"
+#include "LMS_TeamProjectPlayerState.h"
 #include "UObject/ConstructorHelpers.h"
 
 ALMS_TeamProjectGameMode::ALMS_TeamProjectGameMode()
@@ -12,4 +13,8 @@ ALMS_TeamProjectGameMode::ALMS_TeamProjectGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
+
+	PlayerStateClass = ALMS_TeamProjectPlayerState::StaticClass();
+
 }
