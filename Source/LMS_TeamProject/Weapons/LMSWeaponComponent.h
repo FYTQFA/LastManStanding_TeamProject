@@ -1,12 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "Components/ActorComponent.h"
 #include "LMSWeaponTypes.h"
 #include "LMSWeaponComponent.generated.h"
 
 class ALMSWeaponBase;
 class ACharacter;
+class UAbilitySystemComponent;
 class UDataTable;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -69,6 +71,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	ACharacter* GetOwnerCharacter() const;
+	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
+	void GrantCurrentWeaponAbilities();
+	void ClearGrantedWeaponAbilities();
+	void GrantWeaponAbility(TSubclassOf<UGameplayAbility> AbilityClass);
 	void StartMeleeAttack();
 	void StartRangedAttack();
 	void StartBlock();
@@ -107,6 +113,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|State")
 	bool bIsAiming = false;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|GAS")
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 
 	FTimerHandle ReloadTimerHandle;
 };

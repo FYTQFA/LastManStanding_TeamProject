@@ -1,9 +1,12 @@
 #include "LMSWeaponComponent.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/Character.h"
 #include "LMSWeaponBase.h"
 #include "TimerManager.h"
+#include "../LMSGameplayAbility.h"
 
 ULMSWeaponComponent::ULMSWeaponComponent()
 {
@@ -50,6 +53,8 @@ bool ULMSWeaponComponent::EquipWeaponFromData(const FWeaponData& WeaponData)
 	bIsBlocking = false;
 	bIsAiming = false;
 
+	GrantCurrentWeaponAbilities();
+
 	return true;
 }
 
@@ -86,6 +91,8 @@ bool ULMSWeaponComponent::EquipWeaponByID(FName WeaponID)
 
 void ULMSWeaponComponent::UnequipCurrentWeapon()
 {
+	ClearGrantedWeaponAbilities();
+
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->Unequip();
@@ -176,6 +183,70 @@ void ULMSWeaponComponent::Reload()
 ACharacter* ULMSWeaponComponent::GetOwnerCharacter() const
 {
 	return Cast<ACharacter>(GetOwner());
+}
+
+UAbilitySystemComponent* ULMSWeaponComponent::GetOwnerAbilitySystemComponent() const
+{
+	const IAbilitySystemInterface* AbilitySystemOwner = Cast<IAbilitySystemInterface>(GetOwner());
+	return AbilitySystemOwner ? AbilitySystemOwner->GetAbilitySystemComponent() : nullptr;
+}
+
+void ULMSWeaponComponent::GrantCurrentWeaponAbilities()
+{
+	ClearGrantedWeaponAbilities();
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : CurrentWeaponData.GrantedAbilities)
+	{
+		GrantWeaponAbility(AbilityClass);
+	}
+
+	GrantWeaponAbility(CurrentWeaponData.WeaponSkill);
+}
+
+void ULMSWeaponComponent::ClearGrantedWeaponAbilities()
+{
+	UAbilitySystemComponent* AbilitySystemComponent = GetOwnerAbilitySystemComponent();
+	if (!AbilitySystemComponent || GrantedAbilityHandles.IsEmpty())
+	{
+		GrantedAbilityHandles.Reset();
+		return;
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor || !OwnerActor->HasAuthority())
+	{
+		return;
+	}
+
+	for (const FGameplayAbilitySpecHandle& AbilityHandle : GrantedAbilityHandles)
+	{
+		if (AbilityHandle.IsValid())
+		{
+			AbilitySystemComponent->ClearAbility(AbilityHandle);
+		}
+	}
+
+	GrantedAbilityHandles.Reset();
+}
+
+void ULMSWeaponComponent::GrantWeaponAbility(TSubclassOf<UGameplayAbility> AbilityClass)
+{
+	AActor* OwnerActor = GetOwner();
+	UAbilitySystemComponent* AbilitySystemComponent = GetOwnerAbilitySystemComponent();
+	if (!OwnerActor || !OwnerActor->HasAuthority() || !AbilitySystemComponent || !AbilityClass)
+	{
+		return;
+	}
+
+	const ULMSGameplayAbility* AbilityCDO = Cast<ULMSGameplayAbility>(AbilityClass->GetDefaultObject());
+	const int32 InputID = AbilityCDO ? static_cast<int32>(AbilityCDO->AbilityInputID) : INDEX_NONE;
+
+	FGameplayAbilitySpec AbilitySpec(AbilityClass, 1, InputID, CurrentWeapon);
+	const FGameplayAbilitySpecHandle AbilityHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+	if (AbilityHandle.IsValid())
+	{
+		GrantedAbilityHandles.Add(AbilityHandle);
+	}
 }
 
 void ULMSWeaponComponent::StartMeleeAttack()
