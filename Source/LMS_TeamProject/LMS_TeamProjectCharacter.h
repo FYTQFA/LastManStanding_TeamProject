@@ -16,6 +16,7 @@ class UInputAction;
 class UAbilitySystemComponent;
 class ULMSAttributeSet;
 class UGameplayAbility;
+class ULMSWeaponComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -47,6 +48,10 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** Handles equipped weapon data, spawned weapon actor, and weapon actions */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	ULMSWeaponComponent* WeaponComponent;
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -110,5 +115,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	ULMSWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
 };
 

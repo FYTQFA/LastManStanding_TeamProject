@@ -180,6 +180,14 @@ void ULMSWeaponComponent::Reload()
 	}
 }
 
+void ULMSWeaponComponent::RefreshGrantedAbilities()
+{
+	if (CurrentWeapon)
+	{
+		GrantCurrentWeaponAbilities();
+	}
+}
+
 ACharacter* ULMSWeaponComponent::GetOwnerCharacter() const
 {
 	return Cast<ACharacter>(GetOwner());

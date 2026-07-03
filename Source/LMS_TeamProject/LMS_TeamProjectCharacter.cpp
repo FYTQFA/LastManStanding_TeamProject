@@ -15,6 +15,7 @@
 #include "LMS_TeamProjectPlayerState.h"
 #include "LMSGameplayAbility.h"
 #include "GameplayEffect.h"
+#include "Weapons/LMSWeaponComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -54,6 +55,8 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	WeaponComponent = CreateDefaultSubobject<ULMSWeaponComponent>(TEXT("WeaponComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -100,6 +103,11 @@ void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 
 	// ★ 핵심: Owner=PlayerState, Avatar=이 캐릭터
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
+	if (WeaponComponent)
+	{
+		WeaponComponent->RefreshGrantedAbilities();
+	}
 
 	// ★ MoveSpeed 변경 구독
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(

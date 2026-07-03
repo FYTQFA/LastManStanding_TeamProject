@@ -46,6 +46,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void Reload();
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon|GAS")
+	void RefreshGrantedAbilities();
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	ALMSWeaponBase* GetCurrentWeapon() const { return CurrentWeapon; }
 
