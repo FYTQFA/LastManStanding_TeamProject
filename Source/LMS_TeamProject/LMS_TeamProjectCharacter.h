@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "AbilitySystemInterface.h"
+#include "LMSGameplayAbility.h"
 #include "LMS_TeamProjectCharacter.generated.h"
 
 class USpringArmComponent;
@@ -60,6 +61,14 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/** Sprint Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SprintAction;
+
+	/** Dash Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DashAction;
+
 public:
 	ALMS_TeamProjectCharacter();
 
@@ -68,7 +77,6 @@ public:
 	//~ End IAbilitySystemInterface Interface
 
 protected:
-
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
@@ -78,15 +86,19 @@ protected:
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
 
-protected:
+	void OnSpeedChanged(const struct FOnAttributeChangeData& Data);
+
+	void OnAbilityInputPressed(ELMSAbilityInputID InputID);
+	void OnAbilityInputReleased(ELMSAbilityInputID InputID);
+
+	/** 서버/클라 공통 ASC 초기화 */
+	void InitAbilityActorInfo();
+
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	// To add mapping context
-	virtual void BeginPlay();
-
-	// Initialize the ability system's actor info once we have a controller
+	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 public:
 	/** Returns CameraBoom subobject **/

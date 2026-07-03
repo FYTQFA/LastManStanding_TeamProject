@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LMSAttributeSet.h"
 #include "Net/UnrealNetwork.h"
@@ -10,6 +10,8 @@ ULMSAttributeSet::ULMSAttributeSet()
 	, MaxShield(100.f)
 	, Stamina(100.f)
 	, MaxStamina(100.f)
+	, Speed(500.f)
+	, MaxSpeed(1000.f)
 {
 }
 
@@ -23,7 +25,8 @@ void ULMSAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
-
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Speed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxSpeed, COND_None, REPNOTIFY_Always);
 }
 
 void ULMSAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -54,7 +57,14 @@ void ULMSAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, f
 	{
 		NewValue = FMath::Max(NewValue, 1.f);
 	}
-
+	else if (Attribute == GetSpeedAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxSpeed());
+	}
+	else if (Attribute == GetMaxSpeedAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.f);
+	}
 }
 
 void ULMSAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -85,4 +95,14 @@ void ULMSAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
 void ULMSAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxStamina, OldMaxStamina);
+}
+
+void ULMSAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Speed, OldSpeed);
+}
+
+void ULMSAttributeSet::OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxSpeed, OldMaxSpeed);
 }

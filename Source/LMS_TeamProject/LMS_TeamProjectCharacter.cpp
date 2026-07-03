@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LMS_TeamProjectCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -12,6 +12,8 @@
 #include "InputActionValue.h"
 #include "AbilitySystemComponent.h"
 #include "LMSAttributeSet.h"
+#include "LMS_TeamProjectPlayerState.h"
+#include "LMSGameplayAbility.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -55,12 +57,9 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
-	// Create the Ability System Component and Attribute Set
-	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	AttributeSet = CreateDefaultSubobject<ULMSAttributeSet>(TEXT("AttributeSet"));
+
+
 }
 
 UAbilitySystemComponent* ALMS_TeamProjectCharacter::GetAbilitySystemComponent() const
@@ -72,11 +71,46 @@ void ALMS_TeamProjectCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		InitAbilityActorInfo();
 		GiveDefaultAbilities();
+	
+}
+
+void ALMS_TeamProjectCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// 클라: PlayerState가 복제돼서 도착한 시점
+	InitAbilityActorInfo();
+}
+
+void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
+{
+	// PlayerState 가져오기
+	ALMS_TeamProjectPlayerState* PS = GetPlayerState<ALMS_TeamProjectPlayerState>();
+	if (!PS)
+	{
+		return;   // 아직 준비 안 됨
 	}
+
+	// PlayerState의 ASC/AttributeSet을 캐릭터에 캐싱
+	AbilitySystemComponent = PS->GetAbilitySystemComponent();
+	AttributeSet = PS->GetAttributeSet();
+
+	// ★ 핵심: Owner=PlayerState, Avatar=이 캐릭터
+	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
+	// ★ MoveSpeed 변경 구독
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		AttributeSet->GetSpeedAttribute())
+		.AddUObject(this, &ALMS_TeamProjectCharacter::OnSpeedChanged);
+
+	// 초기값 즉시 반영 (구독 전 이미 세팅된 값 대비)
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetSpeed();
+	}
+
 }
 
 void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
@@ -88,10 +122,45 @@ void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
 
 	for (const TSubclassOf<UGameplayAbility>& AbilityClass : DefaultAbilities)
 	{
-		if (AbilityClass)
+		if (!AbilityClass)
 		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, INDEX_NONE, this));
+			continue;
 		}
+
+		// ★ 어빌리티의 CDO에서 InputID 꺼내기
+		const ULMSGameplayAbility* AbilityCDO =
+			Cast<ULMSGameplayAbility>(AbilityClass->GetDefaultObject());
+
+		const int32 InputID = AbilityCDO
+			? (int32)AbilityCDO->AbilityInputID
+			: INDEX_NONE;
+
+		AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(AbilityClass, 1, InputID, this));
+	}
+}
+
+void ALMS_TeamProjectCharacter::OnSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+	}
+}
+
+void ALMS_TeamProjectCharacter::OnAbilityInputPressed(ELMSAbilityInputID InputID)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->AbilityLocalInputPressed((int32)InputID);
+	}
+}
+
+void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputID)
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->AbilityLocalInputReleased((int32)InputID);
 	}
 }
 
@@ -108,6 +177,7 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,6 +197,13 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALMS_TeamProjectCharacter::Look);
+
+		// Sprint (홀드)
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Sprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::Sprint);
+
+		// Dash (단발)
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Dash);
 	}
 	else
 	{
