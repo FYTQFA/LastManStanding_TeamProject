@@ -6,6 +6,10 @@
 ULMSAttributeSet::ULMSAttributeSet()
 	: Health(100.f)
 	, MaxHealth(100.f)
+	, Shield(100.f)
+	, MaxShield(100.f)
+	, Stamina(100.f)
+	, MaxStamina(100.f)
 {
 }
 
@@ -15,6 +19,11 @@ void ULMSAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Shield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxShield, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+
 }
 
 void ULMSAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -29,6 +38,23 @@ void ULMSAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, f
 	{
 		NewValue = FMath::Max(NewValue, 1.f);
 	}
+	else if (Attribute == GetShieldAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxShield());
+	}
+	else if (Attribute == GetMaxShieldAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.f);
+	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxStamina());
+	}
+	else if (Attribute == GetMaxStaminaAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.f);
+	}
+
 }
 
 void ULMSAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -39,4 +65,24 @@ void ULMSAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 void ULMSAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void ULMSAttributeSet::OnRep_Shield(const FGameplayAttributeData& OldShield)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Shield, OldShield);
+}
+
+void ULMSAttributeSet::OnRep_MaxShield(const FGameplayAttributeData& OldMaxShield)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxShield, OldMaxShield);
+}
+
+void ULMSAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Stamina, OldStamina);
+}
+
+void ULMSAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxStamina, OldMaxStamina);
 }
