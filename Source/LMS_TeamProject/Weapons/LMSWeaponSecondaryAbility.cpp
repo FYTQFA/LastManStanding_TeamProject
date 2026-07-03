@@ -4,7 +4,7 @@
 
 ULMSWeaponSecondaryAbility::ULMSWeaponSecondaryAbility()
 {
-	AbilityInputID = ELMSAbilityInputID::FireSecondary;
+	AbilityInputID = ELMSAbilityInputID::SecondaryAttack;
 }
 
 void ULMSWeaponSecondaryAbility::ActivateAbility(

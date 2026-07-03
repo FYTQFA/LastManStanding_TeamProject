@@ -4,7 +4,7 @@
 
 ULMSWeaponPrimaryAbility::ULMSWeaponPrimaryAbility()
 {
-	AbilityInputID = ELMSAbilityInputID::FirePrimary;
+	AbilityInputID = ELMSAbilityInputID::PrimaryAttack;
 }
 
 void ULMSWeaponPrimaryAbility::ActivateAbility(
