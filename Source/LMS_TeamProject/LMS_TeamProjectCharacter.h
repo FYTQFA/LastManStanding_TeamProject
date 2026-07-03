@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "AbilitySystemInterface.h"
+#include "LMSGameplayAbility.h"
 #include "LMS_TeamProjectCharacter.generated.h"
 
 class USpringArmComponent;
@@ -60,6 +61,14 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/** Sprint Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SprintAction;
+
+	/** Dash Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DashAction;
+
 public:
 	ALMS_TeamProjectCharacter();
 
@@ -76,6 +85,11 @@ protected:
 
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
+
+	void OnSpeedChanged(const struct FOnAttributeChangeData& Data);
+
+	void OnAbilityInputPressed(ELMSAbilityInputID InputID);
+	void OnAbilityInputReleased(ELMSAbilityInputID InputID);
 
 	/** 서버/클라 공통 ASC 초기화 */
 	void InitAbilityActorInfo();
