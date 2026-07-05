@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+#include "GameplayTagContainer.h"
 #include "BTTask_Attack.generated.h"
 
 /**
@@ -18,7 +19,9 @@ class LMS_TEAMPROJECT_API UBTTask_Attack : public UBTTask_BlackboardBase
 public:
 	UBTTask_Attack();
 
-	/** Montage to play when this task executes */
+	// 이 태그를 가진 어빌리티를 몽타주와 함께 실행 (비어 있으면 스킵)
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	FGameplayTag AbilityTag;
 
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;

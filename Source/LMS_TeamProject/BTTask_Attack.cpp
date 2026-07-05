@@ -8,6 +8,7 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "AbilitySystemComponent.h"
 
 UBTTask_Attack::UBTTask_Attack()
 {
@@ -25,10 +26,19 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	{
 		return EBTNodeResult::Failed;
 	}
-	const float PlayLength = Character->PlayAnimMontage(Character->AttackMontage);
+	/*const float PlayLength = Character->PlayAnimMontage(Character->AttackMontage);
 	if (PlayLength <= 0.f)
 	{
 		return EBTNodeResult::Failed;
+	}*/
+
+	if (AbilityTag.IsValid())
+	{
+		if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
+		{
+			FGameplayTagContainer TagContainer(AbilityTag);
+			ASC->TryActivateAbilitiesByTag(TagContainer);
+		}
 	}
 
 	OwningComp = &OwnerComp;

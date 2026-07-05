@@ -42,6 +42,7 @@ void AEnemyAIController::BeginPlay()
 			}
 			Blackboard->SetValueAsFloat(TEXT("CoolTime"), Data->CoolTime);
 			Blackboard->SetValueAsFloat(TEXT("MaxCoolTime"), Data->CoolTime);
+			Blackboard->SetValueAsFloat(TEXT("AttackDistance"), Data->AttackDistance);
 		}
 	}
 }

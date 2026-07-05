@@ -26,6 +26,7 @@ void UBTService_TargetDistance::OnBecomeRelevant(UBehaviorTreeComponent& OwnerCo
 	}
 
 	CoolTime = BlackboardComp->GetValueAsFloat(TEXT("CoolTime"));
+	AttackDistance = BlackboardComp->GetValueAsFloat(TEXT("AttackDistance"));
 	/*MaxCoolTime = BlackboardComp->GetValueAsFloat(TEXT("MaxCoolTime"));
 
 	if (MaxCoolTime <= 0.f)
@@ -58,7 +59,7 @@ void UBTService_TargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	}
 
 	const float Distance = FVector::Dist(ControlledPawn->GetActorLocation(), TargetActor->GetActorLocation());
-	const bool bInRange = Distance <= DistanceThreshold;
+	const bool bInRange = Distance <= AttackDistance;
 
 	BlackboardComp->SetValueAsBool(GetSelectedBlackboardKey(), bInRange);
 

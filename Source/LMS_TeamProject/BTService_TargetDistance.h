@@ -32,8 +32,8 @@ public:
 	UPROPERTY()
 	TObjectPtr<UBlackboardComponent> BlackboardComp;
 
-	float CoolTime = 0.f;
-	//float MaxCoolTime = 0.f;
+	double CoolTime = 0.f;
+	double AttackDistance = 0.f;
 
 protected:
 	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;

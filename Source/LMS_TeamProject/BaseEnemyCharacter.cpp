@@ -2,35 +2,67 @@
 
 
 #include "BaseEnemyCharacter.h"
+#include "AbilitySystemComponent.h"
+#include "LMSAttributeSet.h"
 #include "Engine/GameInstance.h"
 #include "DataTableSubSystem.h"
 
-// Sets default values
 ABaseEnemyCharacter::ABaseEnemyCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	AttributeSet = CreateDefaultSubobject<ULMSAttributeSet>(TEXT("AttributeSet"));
 }
 
-// Called when the game starts or when spawned
+UAbilitySystemComponent* ABaseEnemyCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-// Called every frame
+void ABaseEnemyCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		GiveDefaultAbilities();
+	}
+}
+
+void ABaseEnemyCharacter::GiveDefaultAbilities()
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+	{
+		if (Ability)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1));
+		}
+	}
+}
+
 void ABaseEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-// Called to bind functionality to input
 void ABaseEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 const FEnemyTableRow* ABaseEnemyCharacter::GetEnemyData() const

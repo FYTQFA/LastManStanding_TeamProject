@@ -24,5 +24,8 @@ struct FEnemyTableRow : public FTableRowBase
 	double Damage = 0.0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	double AttackDistance = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	double CoolTime = 0.0;
 };
