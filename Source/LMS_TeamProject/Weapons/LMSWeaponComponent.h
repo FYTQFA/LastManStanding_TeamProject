@@ -96,6 +96,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FName EquippedSocketName = TEXT("hand_rSocket");
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Melee")
+	float MeleeTraceRadius = 80.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Debug")
+	bool bDrawDebugMeleeTrace = true;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
 	ALMSWeaponBase* CurrentWeapon;
 

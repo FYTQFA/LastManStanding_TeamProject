@@ -186,17 +186,52 @@ void ALMS_TeamProjectCharacter::OnSpeedChanged(const FOnAttributeChangeData& Dat
 
 void ALMS_TeamProjectCharacter::OnAbilityInputPressed(ELMSAbilityInputID InputID)
 {
+	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input pressed: %d"), static_cast<int32>(InputID));
+
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->AbilityLocalInputPressed((int32)InputID);
+		const int32 InputIDValue = static_cast<int32>(InputID);
+		bool bFoundMatchingAbility = false;
+
+		AbilitySystemComponent->AbilityLocalInputPressed(InputIDValue);
+
+		for (const FGameplayAbilitySpec& AbilitySpec : AbilitySystemComponent->GetActivatableAbilities())
+		{
+			if (AbilitySpec.InputID != InputIDValue || !AbilitySpec.Ability)
+			{
+				continue;
+			}
+
+			bFoundMatchingAbility = true;
+
+			if (!AbilitySpec.IsActive())
+			{
+				AbilitySystemComponent->TryActivateAbility(AbilitySpec.Handle);
+			}
+		}
+
+		if (!bFoundMatchingAbility)
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("No ability found for input: %d"), InputIDValue);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("Ability input ignored because AbilitySystemComponent is null."));
 	}
 }
 
 void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputID)
 {
+	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input released: %d"), static_cast<int32>(InputID));
+
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->AbilityLocalInputReleased((int32)InputID);
+	}
+	else
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("Ability input release ignored because AbilitySystemComponent is null."));
 	}
 }
 
@@ -241,8 +276,15 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		// Dash (단발)
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Dash);
 
-		EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::PrimaryAttack);
-		EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::PrimaryAttack);
+		if (PrimaryAction)
+		{
+			EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::PrimaryAttack);
+			EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::PrimaryAttack);
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("PrimaryAction is not assigned on %s."), *GetNameSafe(this));
+		}
 	}
 	else
 	{
