@@ -124,13 +124,13 @@ protected:
 	void OnRep_Wound(const FGameplayAttributeData& OldWound);
 
 	UFUNCTION()
-	void OnRep_MaxWound(const FGameplayAttributeData& Old);
+	void OnRep_MaxWound(const FGameplayAttributeData& OldMaxWound);
 
 	UFUNCTION()
 	void OnRep_IncapHealth(const FGameplayAttributeData& OldIncapHealth);
 
 	UFUNCTION()
-	void OnRep_MaxIncapHealth(const FGameplayAttributeData& Old);
+	void OnRep_MaxIncapHealth(const FGameplayAttributeData& OldMaxIncapHealth);
 
 	//OnRep_... -> 복제 됐을 시 ReplicatedUsing 으로 불리는 함수 -> 아직 구현 X
 };

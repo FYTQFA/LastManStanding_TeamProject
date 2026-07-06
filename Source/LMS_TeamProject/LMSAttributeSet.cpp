@@ -151,7 +151,7 @@ void ULMSAttributeSet::OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed)
 
 void ULMSAttributeSet::OnRep_Wound(const FGameplayAttributeData& OldWound)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxWound, OldWound);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Wound, OldWound);
 }
 
 void ULMSAttributeSet::OnRep_MaxWound(const FGameplayAttributeData& OldMaxWound)
@@ -161,7 +161,7 @@ void ULMSAttributeSet::OnRep_MaxWound(const FGameplayAttributeData& OldMaxWound)
 
 void ULMSAttributeSet::OnRep_IncapHealth(const FGameplayAttributeData& OldIncapHealth)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxIncapHealth, OldIncapHealth);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, IncapHealth, OldIncapHealth);
 }
 
 void ULMSAttributeSet::OnRep_MaxIncapHealth(const FGameplayAttributeData& OldMaxIncapHealth)

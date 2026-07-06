@@ -254,7 +254,6 @@ void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCa
 		FGameplayTag::RequestGameplayTag(FName("state.Dead"));
 	if (AbilitySystemComponent->HasMatchingGameplayTag(DeadTag)) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("사망 처리 진입!"));   // ← 로그만
 	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 	Context.AddSourceObject(this);
 
