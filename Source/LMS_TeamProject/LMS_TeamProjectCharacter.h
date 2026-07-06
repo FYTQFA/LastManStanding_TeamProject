@@ -41,6 +41,15 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> DefaultEffects;
 
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> IncapacitatedEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> BleedOutEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> DeadEffect;
+
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -103,6 +112,9 @@ protected:
 
 	void OnAbilityInputPressed(ELMSAbilityInputID InputID);
 	void OnAbilityInputReleased(ELMSAbilityInputID InputID);
+
+	void HandleHealthZero(const FGameplayEffectModCallbackData& Data);
+	void HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data);
 
 	/** 서버/클라 공통 ASC 초기화 */
 	void InitAbilityActorInfo();
