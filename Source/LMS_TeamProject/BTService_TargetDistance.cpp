@@ -32,24 +32,27 @@ void UBTService_TargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
+	if (!BlackboardComp)
+	{
+		return;
+	}
+
 	APawn* ControlledPawn = AIController ? AIController->GetPawn() : nullptr;
 
 	CoolTime = BlackboardComp->GetValueAsFloat(TEXT("CoolTime"));
 
 	CoolTime -= DeltaSeconds;
 
-	if (!ControlledPawn || !BlackboardComp || CoolTime > 0)
+	if (!ControlledPawn || CoolTime > 0)
 	{
-		if (BlackboardComp)
-		{
-			BlackboardComp->SetValueAsFloat(TEXT("CoolTime"), CoolTime);
-		}
+		BlackboardComp->SetValueAsFloat(TEXT("CoolTime"), CoolTime);
 		return;
 	}
 
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TEXT("Target")));
 	if (!TargetActor)
 	{
+		BlackboardComp->SetValueAsBool(GetSelectedBlackboardKey(), false);
 		return;
 	}
 
