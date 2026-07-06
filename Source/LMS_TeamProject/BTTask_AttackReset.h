@@ -16,5 +16,6 @@ class LMS_TEAMPROJECT_API UBTTask_AttackReset : public UBTTask_BlackboardBase
 
 public:
 	UBTTask_AttackReset();
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	
 };

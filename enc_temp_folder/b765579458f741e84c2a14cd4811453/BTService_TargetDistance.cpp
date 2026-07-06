@@ -25,6 +25,7 @@ void UBTService_TargetDistance::OnBecomeRelevant(UBehaviorTreeComponent& OwnerCo
 		return;
 	}
 
+	CoolTime = BlackboardComp->GetValueAsFloat(TEXT("CoolTime"));
 	AttackDistance = BlackboardComp->GetValueAsFloat(TEXT("AttackDistance"));
 }
 
@@ -33,8 +34,6 @@ void UBTService_TargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
 	APawn* ControlledPawn = AIController ? AIController->GetPawn() : nullptr;
-
-	CoolTime = BlackboardComp->GetValueAsFloat(TEXT("CoolTime"));
 
 	CoolTime -= DeltaSeconds;
 

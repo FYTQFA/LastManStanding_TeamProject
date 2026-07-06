@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "LMSGameplayAbility.h"
 #include "GA_ProjectileLaunch.generated.h"
 
@@ -35,10 +36,18 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Projectile")
 	TObjectPtr<AActor> TargetActor;
 
-private:
-	// 발사 시작 위치 계산
-	FVector GetMuzzleLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
+	// Send Gameplay Event To Actor로 이 태그가 들어오면 발사체 생성 (예: 애님 노티파이)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
+	FGameplayTag SpawnEventTag;
 
-	// 타겟 위치 계산 (TargetActor 없을 경우 카메라 전방 사용)
-	FVector GetTargetLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
+//private:
+//	// 발사 시작 위치 계산
+//	FVector GetMuzzleLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
+//
+//	// 타겟 위치 계산 (TargetActor 없을 경우 카메라 전방 사용)
+//	FVector GetTargetLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
+//
+//	// SpawnEventTag 이벤트 수신 시 실제 발사체 Spawn 처리
+//	UFUNCTION()
+//	void OnSpawnEventReceived(FGameplayEventData Payload);
 };
