@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+ï»¿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -13,6 +13,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttributeZero, const FGameplayEffectModCallbackData&);
 /**
  * Basic attribute set for LMS_TeamProject characters.
  */
@@ -23,6 +24,12 @@ class LMS_TEAMPROJECT_API ULMSAttributeSet : public UAttributeSet
 
 public:
 	ULMSAttributeSet();
+
+	//ì²´ë ¥ 0ì´ ë  ë•Œ í˜¸ì¶œí•  ë¸ë¦¬ê²Œì´íŠ¸(ì„œë²„ìš©)
+	FOnAttributeZero OnHealthZero;
+
+	//ë¹ˆì‚¬ìƒíƒœ 0ì´ ë  ë•Œ í˜¸ì¶œí•  ë¸ë¦¬ê²Œì´íŠ¸(ì„œë²„ìš©)
+	FOnAttributeZero OnIncapHealthZero;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
@@ -56,15 +63,39 @@ public:
 	FGameplayAttributeData MaxSpeed;
 	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxSpeed)
 
-		// ATTRIBUTE_ACCESSORS -> ¸ÅÅ©·Î¸¦ »ç¿ëÇØ¼­ Attribute, Get, Set, Init ÇÔ¼ö ÀÚµ¿ »ı¼º (10~14ÁÙ Âü°í)
+		// ë‹¤ìš´ ê°€ëŠ¥ íšŸìˆ˜ (ì„¸ê·¸ë¨¼íŠ¸). 0ì´ë©´ ë‹¤ìŒ ë‹¤ìš´ì€ ì¦‰ì‚¬
+		UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Wound)
+	FGameplayAttributeData Wound;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, Wound)
+
+		UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxWound)
+	FGameplayAttributeData MaxWound;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxWound)
+
+
+		// ë‹¤ìš´ ì¤‘ ì„ì‹œ ì²´ë ¥ (BleedOut ê²Œì´ì§€)
+		UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_IncapHealth)
+	FGameplayAttributeData IncapHealth;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, IncapHealth)
+
+		UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxIncapHealth)
+	FGameplayAttributeData MaxIncapHealth;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxIncapHealth)
+
+	
+
+		// ATTRIBUTE_ACCESSORS -> ë§¤í¬ë¡œë¥¼ ì‚¬ìš©í•´ì„œ Attribute, Get, Set, Init í•¨ìˆ˜ ìë™ ìƒì„± (10~14ì¤„ ì°¸ê³ )
 
 	//~ Begin UAttributeSet Interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	// º¹Á¦ÇÒ º¯¼ö µî·ÏÇÏ´Â ÇÔ¼ö
+	// ë³µì œí•  ë³€ìˆ˜ ë“±ë¡í•˜ëŠ” í•¨ìˆ˜
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	//~ End UAttributeSet Interface
 
 protected:
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data);
+
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
@@ -84,10 +115,22 @@ protected:
 	virtual void OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina);
 
 	UFUNCTION()
-	virtual void OnRep_Speed(const FGameplayAttributeData& OldStamina);
+	virtual void OnRep_Speed(const FGameplayAttributeData& OldSpeed);
 
 	UFUNCTION()
-	virtual void OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxStamina);
+	virtual void OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed);
 
-	//OnRep_... -> º¹Á¦ µÆÀ» ½Ã ReplicatedUsing À¸·Î ºÒ¸®´Â ÇÔ¼ö -> ¾ÆÁ÷ ±¸Çö X
+	UFUNCTION()
+	void OnRep_Wound(const FGameplayAttributeData& OldWound);
+
+	UFUNCTION()
+	void OnRep_MaxWound(const FGameplayAttributeData& Old);
+
+	UFUNCTION()
+	void OnRep_IncapHealth(const FGameplayAttributeData& OldIncapHealth);
+
+	UFUNCTION()
+	void OnRep_MaxIncapHealth(const FGameplayAttributeData& Old);
+
+	//OnRep_... -> ë³µì œ ëì„ ì‹œ ReplicatedUsing ìœ¼ë¡œ ë¶ˆë¦¬ëŠ” í•¨ìˆ˜ -> ì•„ì§ êµ¬í˜„ X
 };

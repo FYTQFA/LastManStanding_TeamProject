@@ -112,6 +112,17 @@ void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 		GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetSpeed();
 	}
 
+	// OnHealthZero는 PostGameplayEffectExecute(서버)에서만 브로드캐스트되므로
+	// 서버에서만 바인딩. 클라는 태그 복제로 다운 상태를 표현.
+	if (HasAuthority() && AttributeSet)
+	{
+		// 중복 방지 — 기존 바인딩 제거 후 재바인딩
+		AttributeSet->OnHealthZero.RemoveAll(this);
+		AttributeSet->OnHealthZero.AddUObject(this, &ALMS_TeamProjectCharacter::HandleHealthZero);
+		AttributeSet->OnIncapHealthZero.RemoveAll(this);
+		AttributeSet->OnIncapHealthZero.AddUObject(this, &ALMS_TeamProjectCharacter::HandleIncapHealthZero);
+	}
+
 }
 
 void ALMS_TeamProjectCharacter::GiveDefaultAbilities()
@@ -192,6 +203,71 @@ void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputI
 	}
 }
 
+void ALMS_TeamProjectCharacter::HandleHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	if (!HasAuthority() || !AbilitySystemComponent || !IncapacitatedEffect)
+	{
+		return;
+	}
+
+	// 중복 방지 — 이미 다운 상태면 스킵
+	static const FGameplayTag IncapTag =
+		FGameplayTag::RequestGameplayTag(FName("state.Incapacitated"));
+
+	if (AbilitySystemComponent->HasMatchingGameplayTag(IncapTag))
+	{
+		return;
+	}
+
+	// GE_Incapacitated 적용
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle Spec =
+		AbilitySystemComponent->MakeOutgoingSpec(IncapacitatedEffect, 1.f, Context);
+
+	if (Spec.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+	}
+
+	if (BleedOutEffect)
+	{
+		FGameplayEffectSpecHandle BleedSpec =
+			AbilitySystemComponent->MakeOutgoingSpec(BleedOutEffect, 1.f, Context);
+		if (BleedSpec.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*BleedSpec.Data.Get());
+
+		}
+	}
+}
+
+void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	if (!HasAuthority() || !AbilitySystemComponent || !DeadEffect)
+	{
+		return;
+	}
+
+	static const FGameplayTag DeadTag =
+		FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	if (AbilitySystemComponent->HasMatchingGameplayTag(DeadTag)) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("사망 처리 진입!"));   // ← 로그만
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle DeadSpec =
+		AbilitySystemComponent->MakeOutgoingSpec(DeadEffect, 1.f, Context);
+	if (DeadSpec.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DeadSpec.Data.Get());
+
+	}
+
+}
+
 void ALMS_TeamProjectCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -235,6 +311,8 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::PrimaryAttack);
 		EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::PrimaryAttack);
+
+	
 	}
 	else
 	{

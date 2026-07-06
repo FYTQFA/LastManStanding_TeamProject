@@ -2,16 +2,9 @@
 
 #include "LMSAttributeSet.h"
 #include "Net/UnrealNetwork.h"
+#include "GameplayEffectExtension.h"
 
 ULMSAttributeSet::ULMSAttributeSet()
-	: Health(100.f)
-	, MaxHealth(100.f)
-	, Shield(100.f)
-	, MaxShield(100.f)
-	, Stamina(100.f)
-	, MaxStamina(100.f)
-	, Speed(500.f)
-	, MaxSpeed(1000.f)
 {
 }
 
@@ -27,6 +20,11 @@ void ULMSAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Speed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, Wound, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxWound, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, IncapHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(ULMSAttributeSet, MaxIncapHealth, COND_None, REPNOTIFY_Always);
+
 
 }
 
@@ -66,10 +64,49 @@ void ULMSAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, f
 	{
 		NewValue = FMath::Max(NewValue, 1.f);
 	}
-
+	else if (Attribute == GetWoundAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxWound());
+	}
+	else if (Attribute == GetMaxWoundAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.f);
+	}
+	else if (Attribute == GetIncapHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxIncapHealth());
+	}
+	else if (Attribute == GetMaxIncapHealthAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 1.f);
+	}
 
 } //GetMax...에서 Max의 최솟값을 1.f로 설정 -> 0 나누기 방지
 //ApplyGameplayEffects -> PreAttributeChange(엔진이 자동으로 값 검사) -> 검사 완료된 값 GE로 반영
+
+void ULMSAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		// 1. 먼저 확정값 clamp (0 밑으로 안 가게)
+		SetHealth(FMath::Clamp(GetHealth(), 0.f, GetMaxHealth()));
+
+		// 2. Health 0 → 델리게이트 브로드캐스트 (Post라 서버에서만 불림)
+		if (GetHealth() <= 0.f)
+		{
+			OnHealthZero.Broadcast(Data);
+		}
+	}
+
+	else if (Data.EvaluatedData.Attribute == GetIncapHealthAttribute())
+	{
+		SetIncapHealth(FMath::Clamp(GetIncapHealth(), 0.f, GetMaxIncapHealth()));
+		if (GetIncapHealth() <= 0.f)
+			OnIncapHealthZero.Broadcast(Data);
+	}
+}
 
 void ULMSAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
@@ -102,12 +139,32 @@ void ULMSAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStam
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxStamina, OldMaxStamina);
 }
 
-void ULMSAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldStamina)
+void ULMSAttributeSet::OnRep_Speed(const FGameplayAttributeData& OldSpeed)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Speed, OldStamina);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, Speed, OldSpeed);
 }
 
-void ULMSAttributeSet::OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxStamina)
+void ULMSAttributeSet::OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxSpeed, OldMaxStamina);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxSpeed, OldMaxSpeed);
+}
+
+void ULMSAttributeSet::OnRep_Wound(const FGameplayAttributeData& OldWound)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxWound, OldWound);
+}
+
+void ULMSAttributeSet::OnRep_MaxWound(const FGameplayAttributeData& OldMaxWound)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxWound, OldMaxWound);
+}
+
+void ULMSAttributeSet::OnRep_IncapHealth(const FGameplayAttributeData& OldIncapHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxIncapHealth, OldIncapHealth);
+}
+
+void ULMSAttributeSet::OnRep_MaxIncapHealth(const FGameplayAttributeData& OldMaxIncapHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ULMSAttributeSet, MaxIncapHealth, OldMaxIncapHealth);
 }
