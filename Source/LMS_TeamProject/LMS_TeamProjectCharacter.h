@@ -16,6 +16,7 @@ class UInputAction;
 class UAbilitySystemComponent;
 class ULMSAttributeSet;
 class UGameplayAbility;
+class ULMSWeaponComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -40,6 +41,15 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> DefaultEffects;
 
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> IncapacitatedEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> BleedOutEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> DeadEffect;
+
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -47,6 +57,10 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** Handles equipped weapon data, spawned weapon actor, and weapon actions */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	ULMSWeaponComponent* WeaponComponent;
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -72,6 +86,9 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* DashAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PrimaryAction;
+
 public:
 	ALMS_TeamProjectCharacter();
 
@@ -96,6 +113,9 @@ protected:
 	void OnAbilityInputPressed(ELMSAbilityInputID InputID);
 	void OnAbilityInputReleased(ELMSAbilityInputID InputID);
 
+	void HandleHealthZero(const FGameplayEffectModCallbackData& Data);
+	void HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data);
+
 	/** 서버/클라 공통 ASC 초기화 */
 	void InitAbilityActorInfo();
 
@@ -110,5 +130,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	ULMSWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
 };
 
