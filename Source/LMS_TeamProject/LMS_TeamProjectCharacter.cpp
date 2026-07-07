@@ -246,6 +246,22 @@ void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputI
 	}
 }
 
+void ALMS_TeamProjectCharacter::TakeDamage(float Damage)
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->ApplyModToAttribute(
+		ULMSAttributeSet::GetHealthAttribute(),
+		EGameplayModOp::Additive,
+		-Damage);
+
+	UE_LOG(LogTemplateCharacter, Log, TEXT("%s took %.1f damage, remaining Health = %.1f"),
+		*GetName(), Damage, AttributeSet ? AttributeSet->GetHealth() : 0.f);
+}
+
 void ALMS_TeamProjectCharacter::HandleHealthZero(const FGameplayEffectModCallbackData& Data)
 {
 	if (!HasAuthority() || !AbilitySystemComponent || !IncapacitatedEffect)

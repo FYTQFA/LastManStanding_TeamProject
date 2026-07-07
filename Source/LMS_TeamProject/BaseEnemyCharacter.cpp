@@ -26,6 +26,15 @@ UAbilitySystemComponent* ABaseEnemyCharacter::GetAbilitySystemComponent() const
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	const FEnemyTableRow* Data = GetEnemyData();
+	if (Data)
+	{
+		AbilitySystemComponent->ApplyModToAttribute(
+			ULMSAttributeSet::GetHealthAttribute(),
+			EGameplayModOp::Additive,
+			Data->MaxHP);
+	}
 }
 
 void ABaseEnemyCharacter::PossessedBy(AController* NewController)
