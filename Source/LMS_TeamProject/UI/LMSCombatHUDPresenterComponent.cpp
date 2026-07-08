@@ -179,3 +179,14 @@ void ULMSCombatHUDPresenterComponent::UpdateSkillCooldownUI(float CurrentCooldow
 
 	CombatHUDWidget->SetSkillCooldown(CurrentCooldown, MaxCooldown);
 }
+
+void ULMSCombatHUDPresenterComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo) const
+{
+	// 무기 컴포넌트에서 받은 탄약 값을 HUD BP 이벤트로 넘깁니다.
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetAmmo(CurrentAmmo, ReserveAmmo);
+}

@@ -45,6 +45,9 @@ private:
 	// 스킬 쿨타임 HUD에 전달합니다.
 	void UpdateSkillCooldownUI(float CurrentCooldown, float MaxCooldown) const;
 
+	//탄약 보유량을 HUD에 전달합니다.
+	void UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo) const;
+
 	// GAS Attribute 변경 알림을 받으면 해당 HUD 표시를 다시 갱신합니다.
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
 	void HandleMaxHealthChanged(const FOnAttributeChangeData& Data);

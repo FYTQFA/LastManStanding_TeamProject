@@ -30,6 +30,13 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "LMS|Combat HUD")
 	void SetStamina(float CurrentStamina, float MaxStamina);
 	
+	// 현재 스킬 쿨타임을 확인 후 전달합니다.
+	// 실제 ProgressBar/Text 갱신 로직은 WBP_LJH_CombatHUD 블루프린트에서 구현합니다.
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
 	void SetSkillCooldown(float CurrentCooldown, float MaxCooldown);
+
+	// 현재 탄약량을 확인 후 전달합니다.
+	// 실제 ProgressBar/Text 갱신 로직은 WBP_LJH_CombatHUD 블루프린트에서 구현합니다.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetAmmo(int32 CurrentAmmo, int32 ReserveAmmo);
 };
