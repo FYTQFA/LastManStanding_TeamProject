@@ -6,6 +6,10 @@
 #include "LMSAttributeSet.h"
 #include "Engine/GameInstance.h"
 #include "DataTableSubSystem.h"
+#include "GameplayTagContainer.h"
+#include "UI/IndicatorManagerComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/World.h"
 
 ABaseEnemyCharacter::ABaseEnemyCharacter()
 {
@@ -26,6 +30,37 @@ UAbilitySystemComponent* ABaseEnemyCharacter::GetAbilitySystemComponent() const
 void ABaseEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (AbilitySystemComponent)
+	{
+		// 인디케이터 시스템이 적(빨강)을 구분할 때 사용하는 팀 태그입니다.
+		static const FGameplayTag TeamEnemyTag = FGameplayTag::RequestGameplayTag(FName("Team.Enemy"));
+		if (HasAuthority() && !AbilitySystemComponent->HasMatchingGameplayTag(TeamEnemyTag))
+		{
+			AbilitySystemComponent->AddReplicatedLooseGameplayTag(TeamEnemyTag);
+		}
+	}
+
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->RegisterTarget(this, ELMSIndicatorType::Enemy);
+		}
+	}
+}
+
+void ABaseEnemyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->UnregisterTarget(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ABaseEnemyCharacter::PossessedBy(AController* NewController)
@@ -37,6 +72,17 @@ void ABaseEnemyCharacter::PossessedBy(AController* NewController)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		GiveDefaultAbilities();
 	}
+}
+
+ELMSIndicatorType ABaseEnemyCharacter::GetIndicatorType_Implementation() const
+{
+	return ELMSIndicatorType::Enemy;
+}
+
+bool ABaseEnemyCharacter::ShouldShowIndicator_Implementation() const
+{
+	static const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	return !AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag);
 }
 
 void ABaseEnemyCharacter::GiveDefaultAbilities()

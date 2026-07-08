@@ -16,7 +16,8 @@ enum class ELMSUIType : uint8
 	Pause	UMETA(DisplayName = "Pause UI"),
 	Respawn	UMETA(DisplayName = "Respawn UI"),
 	Lobby	UMETA(DisplayName = "Lobby UI"),
-	Result	UMETA(DisplayName = "Result UI")
+	Result	UMETA(DisplayName = "Result UI"),
+	Indicator UMETA(DisplayName = "Indicator Overlay UI")
 };
 
 // UI 하나를 생성하고 표시하기 위한 설정 데이터입니다.
