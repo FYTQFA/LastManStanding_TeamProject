@@ -88,6 +88,8 @@ void ALMS_TeamProjectCharacter::OnRep_PlayerState()
 	InitAbilityActorInfo();
 }
 
+
+
 void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 {
 	// PlayerState 가져오기
@@ -310,6 +312,51 @@ void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCa
 
 }
 
+void ALMS_TeamProjectCharacter::TraceForReviveTarget()
+{
+	// 로컬 컨트롤 플레이어만 트레이스 (남의 화면 기준은 의미 없음)
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	const FVector Start = GetActorLocation();
+	const FVector End = Start + GetActorForwardVector() * ReviveTraceDistance;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);   // 나 자신 무시
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit, Start, End, ECC_Pawn, Params);
+
+	// 디버그 시각화
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.2f, 0, 1.f);
+	if (bHit)
+	{
+		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 10.f, 8, FColor::Green, false, 0.2f);
+	}
+
+	// 맞은 대상이 다운 상태(state.Incapacitated)면 부활 후보로 확정
+	AActor* NewTarget = nullptr;
+	if (bHit && Hit.GetActor())
+	{
+		if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Hit.GetActor()))
+		{
+			if (UAbilitySystemComponent* TargetASC = ASI->GetAbilitySystemComponent())
+			{
+				if (TargetASC->HasMatchingGameplayTag(
+					FGameplayTag::RequestGameplayTag("state.Incapacitated")))
+				{
+					NewTarget = Hit.GetActor();
+				}
+			}
+		}
+	}
+
+	CurrentReviveTarget = NewTarget;
+}
+
 void ALMS_TeamProjectCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -323,7 +370,10 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	
+	GetWorldTimerManager().SetTimer(
+		ReviveTraceTimerHandle, this,
+		&ALMS_TeamProjectCharacter::TraceForReviveTarget,
+		0.15f, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -351,6 +401,9 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		// Dash (단발)
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Dash);
 
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Interact);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::Interact);
+
 		if (PrimaryAction)
 		{
 			EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::PrimaryAttack);
@@ -360,6 +413,18 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		{
 			UE_LOG(LogTemplateCharacter, Warning, TEXT("PrimaryAction is not assigned on %s."), *GetNameSafe(this));
 		}
+		if (SecondaryAction)
+		{
+			EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::SecondaryAttack);
+			EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::SecondaryAttack);
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("SecondaryAction is not assigned on %s."), *GetNameSafe(this));
+		}
+
+
+
 	}
 	else
 	{
