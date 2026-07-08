@@ -3,13 +3,15 @@
 
 #include "BaseEnemyCharacter.h"
 #include "AbilitySystemComponent.h"
-#include "LMSAttributeSet.h"
+#include "../LMSAttributeSet.h"
 #include "Engine/GameInstance.h"
 #include "DataTableSubSystem.h"
 #include "GameplayTagContainer.h"
-#include "UI/IndicatorManagerComponent.h"
+#include "../UI/IndicatorManagerComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
+#include "TimerManager.h"
 
 ABaseEnemyCharacter::ABaseEnemyCharacter()
 {
@@ -71,6 +73,13 @@ void ABaseEnemyCharacter::PossessedBy(AController* NewController)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		GiveDefaultAbilities();
+
+		// OnHealthZero는 PostGameplayEffectExecute(서버)에서만 브로드캐스트됩니다.
+		if (HasAuthority() && AttributeSet)
+		{
+			AttributeSet->OnHealthZero.RemoveAll(this);
+			AttributeSet->OnHealthZero.AddUObject(this, &ABaseEnemyCharacter::HandleHealthZero);
+		}
 	}
 }
 
@@ -116,6 +125,35 @@ const FEnemyTableRow* ABaseEnemyCharacter::GetEnemyData() const
 	const UGameInstance* GameInstance = GetGameInstance();
 	const UDataTableSubSystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UDataTableSubSystem>() : nullptr;
 	return DataSubsystem ? DataSubsystem->GetEnemyData(UniqueID) : nullptr;
+}
+
+void ABaseEnemyCharacter::HandleHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	if (!HasAuthority() || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	static const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	if (AbilitySystemComponent->HasMatchingGameplayTag(DeadTag))
+	{
+		return;
+	}
+	AbilitySystemComponent->AddReplicatedLooseGameplayTag(DeadTag);
+
+	SetActorEnableCollision(false);
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->StopMovementImmediately();
+		Movement->DisableMovement();
+	}
+
+	GetWorldTimerManager().SetTimer(DeathDestroyTimerHandle, this, &ABaseEnemyCharacter::HandleDeathDestroy, DeathDestroyDelay, false);
+}
+
+void ABaseEnemyCharacter::HandleDeathDestroy()
+{
+	Destroy();
 }
 
 

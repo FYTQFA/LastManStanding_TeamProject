@@ -5,8 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "EnemyTableRow.h"
-#include "UI/IndicatorTargetInterface.h"
+#include "../UI/IndicatorTargetInterface.h"
 #include "BaseEnemyCharacter.generated.h"
 
 class UAbilitySystemComponent;
@@ -51,6 +52,10 @@ public:
 
 	const FEnemyTableRow* GetEnemyData() const;
 
+	// 사망 후 액터를 제거하기까지의 지연 시간(초). 사망 애니메이션 재생 시간 확보용.
+	UPROPERTY(EditDefaultsOnly, Category = "Stat")
+	float DeathDestroyDelay = 2.f;
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -58,5 +63,12 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<ULMSAttributeSet> AttributeSet;
 
+	FTimerHandle DeathDestroyTimerHandle;
+
 	void GiveDefaultAbilities();
+
+	// AttributeSet->OnHealthZero(서버 전용)에 바인딩되어 사망 처리를 수행합니다.
+	void HandleHealthZero(const FGameplayEffectModCallbackData& Data);
+
+	void HandleDeathDestroy();
 };
