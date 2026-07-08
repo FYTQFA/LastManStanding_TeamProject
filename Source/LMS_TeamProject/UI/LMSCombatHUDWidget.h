@@ -39,4 +39,12 @@ public:
 	// 실제 ProgressBar/Text 갱신 로직은 WBP_LJH_CombatHUD 블루프린트에서 구현합니다.
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
 	void SetAmmo(int32 CurrentAmmo, int32 ReserveAmmo);
+
+	// SetInteractionPrompt는 표시 내용을 받는 문
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetInteractionPrompt(const FText& KeyText, const FText& InteractionText);
+
+	// SetInteractionVisible은 보일지 숨길지 결정하는 문
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetInteractionVisible(bool bVisible);
 };

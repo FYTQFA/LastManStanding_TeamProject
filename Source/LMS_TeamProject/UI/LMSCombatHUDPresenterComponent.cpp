@@ -190,3 +190,25 @@ void ULMSCombatHUDPresenterComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 Rese
 
 	CombatHUDWidget->SetAmmo(CurrentAmmo, ReserveAmmo);
 }
+
+void ULMSCombatHUDPresenterComponent::UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const
+{
+	// 상호작용 시스템이 결정한 표시 문구를 HUD BP 이벤트로 넘깁니다.
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetInteractionPrompt(KeyText, InteractionText);
+}
+
+void ULMSCombatHUDPresenterComponent::UpdateInteractionVisible(bool bVisible) const
+{
+	// 상호작용 가능 여부에 따라 HUD의 상호작용 패널을 표시하거나 숨깁니다.
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetInteractionVisible(bVisible);
+}
