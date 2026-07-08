@@ -30,4 +30,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "LMS|Combat HUD")
 	void SetStamina(float CurrentStamina, float MaxStamina);
 	
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetSkillCooldown(float CurrentCooldown, float MaxCooldown);
 };

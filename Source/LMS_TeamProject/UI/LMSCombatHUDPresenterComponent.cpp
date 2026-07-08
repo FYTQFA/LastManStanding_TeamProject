@@ -169,3 +169,13 @@ void ULMSCombatHUDPresenterComponent::HandleMaxStaminaChanged(const FOnAttribute
 {
 	UpdateStaminaUI();
 }
+
+void ULMSCombatHUDPresenterComponent::UpdateSkillCooldownUI(float CurrentCooldown, float MaxCooldown) const
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetSkillCooldown(CurrentCooldown, MaxCooldown);
+}

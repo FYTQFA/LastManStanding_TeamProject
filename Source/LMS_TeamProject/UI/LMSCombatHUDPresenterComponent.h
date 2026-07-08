@@ -42,6 +42,9 @@ private:
 	void UpdateShieldUI();
 	void UpdateStaminaUI();
 
+	// 스킬 쿨타임 HUD에 전달합니다.
+	void UpdateSkillCooldownUI(float CurrentCooldown, float MaxCooldown) const;
+
 	// GAS Attribute 변경 알림을 받으면 해당 HUD 표시를 다시 갱신합니다.
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
 	void HandleMaxHealthChanged(const FOnAttributeChangeData& Data);
