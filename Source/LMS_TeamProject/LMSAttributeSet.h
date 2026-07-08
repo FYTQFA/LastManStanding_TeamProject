@@ -13,6 +13,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttributeZero, const FGameplayEffectModCallbackData&);
 /**
  * Basic attribute set for LMS_TeamProject characters.
  */
@@ -23,6 +24,12 @@ class LMS_TEAMPROJECT_API ULMSAttributeSet : public UAttributeSet
 
 public:
 	ULMSAttributeSet();
+
+	//체력 0이 될 때 호출할 델리게이트(서버용)
+	FOnAttributeZero OnHealthZero;
+
+	//빈사상태 0이 될 때 호출할 델리게이트(서버용)
+	FOnAttributeZero OnIncapHealthZero;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
@@ -56,12 +63,31 @@ public:
 	FGameplayAttributeData MaxSpeed;
 	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxSpeed)
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Wound)
+	FGameplayAttributeData Wound;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, Wound)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxWound)
+	FGameplayAttributeData MaxWound;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxWound)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_IncapHealth)
+	FGameplayAttributeData IncapHealth;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, IncapHealth)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxIncapHealth)
+	FGameplayAttributeData MaxIncapHealth;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxIncapHealth)
+
 	//~ Begin UAttributeSet Interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	//~ End UAttributeSet Interface
 
 protected:
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data);
+
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
@@ -85,4 +111,16 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MaxSpeed(const FGameplayAttributeData& OldMaxSpeed);
+
+	UFUNCTION()
+	void OnRep_Wound(const FGameplayAttributeData& OldWound);
+
+	UFUNCTION()
+	void OnRep_MaxWound(const FGameplayAttributeData& OldMaxWound);
+
+	UFUNCTION()
+	void OnRep_IncapHealth(const FGameplayAttributeData& OldIncapHealth);
+
+	UFUNCTION()
+	void OnRep_MaxIncapHealth(const FGameplayAttributeData& OldMaxIncapHealth);
 };

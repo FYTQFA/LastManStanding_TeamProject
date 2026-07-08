@@ -46,6 +46,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void Reload();
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon|GAS")
+	void RefreshGrantedAbilities();
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	ALMSWeaponBase* GetCurrentWeapon() const { return CurrentWeapon; }
 
@@ -92,6 +95,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FName EquippedSocketName = TEXT("hand_rSocket");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Melee")
+	float MeleeTraceRadius = 80.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Debug")
+	bool bDrawDebugMeleeTrace = true;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
 	ALMSWeaponBase* CurrentWeapon;

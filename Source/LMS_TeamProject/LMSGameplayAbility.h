@@ -16,8 +16,8 @@ enum class ELMSAbilityInputID : uint8
 	Sprint      UMETA(DisplayName = "Sprint"),
 	Dash        UMETA(DisplayName = "Dash"),
 	WeaponSkill UMETA(DisplayName = "WeaponSkill"),
-	FirePrimary UMETA(DisplayName = "FirePrimary"),   // ← 이렇게 추가
-	FireSecondary UMETA(DisplayName = "FireSecondary") // 필요하면 보조사격도
+	PrimaryAttack UMETA(DisplayName = "FirePrimary"),   // ← 이렇게 추가
+	SecondaryAttack UMETA(DisplayName = "FireSecondary") // 필요하면 보조사격도
 };
 
 /**

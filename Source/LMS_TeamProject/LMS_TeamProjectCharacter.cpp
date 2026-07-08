@@ -15,6 +15,10 @@
 #include "LMS_TeamProjectPlayerState.h"
 #include "LMSGameplayAbility.h"
 #include "GameplayEffect.h"
+#include "Weapons/LMSWeaponComponent.h"
+#include "PingMarker.h"
+#include "GameplayTagContainer.h"
+#include "UI/IndicatorManagerComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -54,6 +58,8 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	WeaponComponent = CreateDefaultSubobject<ULMSWeaponComponent>(TEXT("WeaponComponent"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -101,6 +107,18 @@ void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 	// ★ 핵심: Owner=PlayerState, Avatar=이 캐릭터
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
+	// 인디케이터 시스템이 팀원(녹색)/적(빨강)을 구분할 때 사용하는 팀 태그입니다.
+	static const FGameplayTag TeamPlayerTag = FGameplayTag::RequestGameplayTag(FName("Team.Player"));
+	if (HasAuthority() && !AbilitySystemComponent->HasMatchingGameplayTag(TeamPlayerTag))
+	{
+		AbilitySystemComponent->AddReplicatedLooseGameplayTag(TeamPlayerTag);
+	}
+
+	if (WeaponComponent)
+	{
+		WeaponComponent->RefreshGrantedAbilities();
+	}
+
 	// ★ MoveSpeed 변경 구독
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 		AttributeSet->GetSpeedAttribute())
@@ -110,6 +128,17 @@ void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 	if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = AttributeSet->GetSpeed();
+	}
+
+	// OnHealthZero는 PostGameplayEffectExecute(서버)에서만 브로드캐스트되므로
+	// 서버에서만 바인딩. 클라는 태그 복제로 다운 상태를 표현.
+	if (HasAuthority() && AttributeSet)
+	{
+		// 중복 방지 — 기존 바인딩 제거 후 재바인딩
+		AttributeSet->OnHealthZero.RemoveAll(this);
+		AttributeSet->OnHealthZero.AddUObject(this, &ALMS_TeamProjectCharacter::HandleHealthZero);
+		AttributeSet->OnIncapHealthZero.RemoveAll(this);
+		AttributeSet->OnIncapHealthZero.AddUObject(this, &ALMS_TeamProjectCharacter::HandleIncapHealthZero);
 	}
 
 }
@@ -178,23 +207,122 @@ void ALMS_TeamProjectCharacter::OnSpeedChanged(const FOnAttributeChangeData& Dat
 
 void ALMS_TeamProjectCharacter::OnAbilityInputPressed(ELMSAbilityInputID InputID)
 {
+	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input pressed: %d"), static_cast<int32>(InputID));
+
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->AbilityLocalInputPressed((int32)InputID);
+		const int32 InputIDValue = static_cast<int32>(InputID);
+		bool bFoundMatchingAbility = false;
+
+		AbilitySystemComponent->AbilityLocalInputPressed(InputIDValue);
+
+		for (const FGameplayAbilitySpec& AbilitySpec : AbilitySystemComponent->GetActivatableAbilities())
+		{
+			if (AbilitySpec.InputID != InputIDValue || !AbilitySpec.Ability)
+			{
+				continue;
+			}
+
+			bFoundMatchingAbility = true;
+
+			if (!AbilitySpec.IsActive())
+			{
+				AbilitySystemComponent->TryActivateAbility(AbilitySpec.Handle);
+			}
+		}
+
+		if (!bFoundMatchingAbility)
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("No ability found for input: %d"), InputIDValue);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("Ability input ignored because AbilitySystemComponent is null."));
 	}
 }
 
 void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputID)
 {
+	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input released: %d"), static_cast<int32>(InputID));
+
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->AbilityLocalInputReleased((int32)InputID);
 	}
+	else
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("Ability input release ignored because AbilitySystemComponent is null."));
+	}
+}
+
+void ALMS_TeamProjectCharacter::HandleHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	if (!HasAuthority() || !AbilitySystemComponent || !IncapacitatedEffect)
+	{
+		return;
+	}
+
+	// 중복 방지 — 이미 다운 상태면 스킵
+	static const FGameplayTag IncapTag =
+		FGameplayTag::RequestGameplayTag(FName("state.Incapacitated"));
+
+	if (AbilitySystemComponent->HasMatchingGameplayTag(IncapTag))
+	{
+		return;
+	}
+
+	// GE_Incapacitated 적용
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle Spec =
+		AbilitySystemComponent->MakeOutgoingSpec(IncapacitatedEffect, 1.f, Context);
+
+	if (Spec.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+	}
+
+	if (BleedOutEffect)
+	{
+		FGameplayEffectSpecHandle BleedSpec =
+			AbilitySystemComponent->MakeOutgoingSpec(BleedOutEffect, 1.f, Context);
+		if (BleedSpec.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*BleedSpec.Data.Get());
+
+		}
+	}
+}
+
+void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	if (!HasAuthority() || !AbilitySystemComponent || !DeadEffect)
+	{
+		return;
+	}
+
+	static const FGameplayTag DeadTag =
+		FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	if (AbilitySystemComponent->HasMatchingGameplayTag(DeadTag)) return;
+
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle DeadSpec =
+		AbilitySystemComponent->MakeOutgoingSpec(DeadEffect, 1.f, Context);
+	if (DeadSpec.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*DeadSpec.Data.Get());
+
+	}
+
 }
 
 void ALMS_TeamProjectCharacter::BeginPlay()
 {
-	// Call the base class  
+	// Call the base class
 	Super::BeginPlay();
 
 	//Add Input Mapping Context
@@ -205,7 +333,48 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	
+
+	// 로컬 플레이어의 인디케이터 시스템에 자신을 팀원(녹색)으로 등록합니다.
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->RegisterTarget(this, ELMSIndicatorType::Ally);
+		}
+	}
+}
+
+void ALMS_TeamProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->UnregisterTarget(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+ELMSIndicatorType ALMS_TeamProjectCharacter::GetIndicatorType_Implementation() const
+{
+	return ELMSIndicatorType::Ally;
+}
+
+bool ALMS_TeamProjectCharacter::ShouldShowIndicator_Implementation() const
+{
+	// 로컬 플레이어 자기 자신은 인디케이터로 표시하지 않습니다.
+	if (const APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (LocalPC->GetPawn() == this)
+		{
+			return false;
+		}
+	}
+
+	static const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	return !AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,6 +401,22 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Dash (단발)
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Dash);
+
+		if (PrimaryAction)
+		{
+			EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::PrimaryAttack);
+			EnhancedInputComponent->BindAction(PrimaryAction, ETriggerEvent::Completed, this, &ALMS_TeamProjectCharacter::OnAbilityInputReleased, ELMSAbilityInputID::PrimaryAttack);
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("PrimaryAction is not assigned on %s."), *GetNameSafe(this));
+		}
+
+		// Ping (마우스 휠 클릭)
+		if (PingAction)
+		{
+			EnhancedInputComponent->BindAction(PingAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::RequestPing);
+		}
 	}
 	else
 	{
@@ -273,4 +458,38 @@ void ALMS_TeamProjectCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ALMS_TeamProjectCharacter::RequestPing(const FInputActionValue& Value)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// 1인칭/3인칭 무관하게 실제 카메라(크로스헤어) 기준으로 라인트레이스합니다.
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	const FVector TraceEnd = CameraLocation + CameraRotation.Vector() * PingTraceDistance;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Ping), false, this);
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraLocation, TraceEnd, ECC_Visibility, Params);
+	const FVector PingLocation = bHit ? Hit.Location : TraceEnd;
+
+	Server_RequestPing(PingLocation);
+}
+
+void ALMS_TeamProjectCharacter::Server_RequestPing_Implementation(FVector_NetQuantize PingLocation)
+{
+	if (!PingMarkerClass)
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("PingMarkerClass is not assigned on %s."), *GetNameSafe(this));
+		return;
+	}
+
+	const FTransform SpawnTransform(FRotator::ZeroRotator, PingLocation);
+	GetWorld()->SpawnActor<APingMarker>(PingMarkerClass, SpawnTransform);
 }
