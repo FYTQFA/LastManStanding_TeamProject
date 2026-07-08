@@ -102,6 +102,36 @@ void ULMSAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbac
 		if (GetIncapHealth() <= 0.f)
 			OnIncapHealthZero.Broadcast(Data);
 	}
+
+
+	else if (Data.EvaluatedData.Attribute == GetDamageAttribute()) //쉴드 로직
+	{
+		const float LocalDamage = GetDamage();
+		SetDamage(0.f);                  // 메타값 즉시 소비(리셋)
+
+		if (LocalDamage > 0.f)
+		{
+			float Remaining = LocalDamage;
+
+			// 1) 쉴드로 먼저 흡수
+			if (GetShield() > 0.f)
+			{
+				const float Absorbed = FMath::Min(GetShield(), Remaining);
+				SetShield(GetShield() - Absorbed);
+				Remaining -= Absorbed;
+			}
+
+			// 2) 넘친 만큼만 체력
+			if (Remaining > 0.f)
+			{
+				SetHealth(FMath::Clamp(GetHealth() - Remaining, 0.f, GetMaxHealth()));
+				if (GetHealth() <= 0.f)
+				{
+					OnHealthZero.Broadcast(Data);
+				}
+			}
+		}
+	}
 }
 
 void ULMSAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
