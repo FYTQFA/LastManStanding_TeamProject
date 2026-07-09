@@ -423,6 +423,24 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 			UE_LOG(LogTemplateCharacter, Warning, TEXT("SecondaryAction is not assigned on %s."), *GetNameSafe(this));
 		}
 
+		if (WeaponSkillAction)
+		{
+			EnhancedInputComponent->BindAction(WeaponSkillAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::WeaponSkill);
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("WeaponSkillAction is not assigned on %s."), *GetNameSafe(this));
+		}
+
+		if (ReloadAction)
+		{
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::OnAbilityInputPressed, ELMSAbilityInputID::Reload);
+		}
+		else
+		{
+			UE_LOG(LogTemplateCharacter, Warning, TEXT("ReloadAction is not assigned on %s."), *GetNameSafe(this));
+		}
+
 
 
 	}
