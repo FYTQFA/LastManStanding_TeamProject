@@ -4,7 +4,6 @@
 #include "BTTask_AttackReset.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
-
 UBTTask_AttackReset::UBTTask_AttackReset()
 {
 	NodeName = TEXT("Attack Reset");

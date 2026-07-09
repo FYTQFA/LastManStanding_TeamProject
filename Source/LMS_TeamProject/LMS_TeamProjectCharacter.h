@@ -8,6 +8,7 @@
 #include "AbilitySystemInterface.h"
 #include "LMSInteractableInterface.h"
 #include "LMSGameplayAbility.h"
+#include "UI/IndicatorTargetInterface.h"
 #include "LMS_TeamProjectCharacter.generated.h"
 
 class USpringArmComponent;
@@ -24,7 +25,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterface , public ILMSInteractableInterface
+class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterface , public ILMSInteractableInterface , public IIndicatorTargetInterface
 {
 	GENERATED_BODY()
 
@@ -100,8 +101,26 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* PrimaryAction;
 
+	/** Ping Input Action (마우스 휠 클릭) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PingAction;
+
+	/** 핑 마커로 스폰할 액터 클래스 */
+	UPROPERTY(EditDefaultsOnly, Category = "Ping", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class APingMarker> PingMarkerClass;
+
+	/** 핑 라인트레이스 최대 거리 */
+	UPROPERTY(EditDefaultsOnly, Category = "Ping", meta = (AllowPrivateAccess = "true"))
+	float PingTraceDistance = 5000.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SecondaryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* WeaponSkillAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction;
 
 public:
 	ALMS_TeamProjectCharacter();
@@ -110,14 +129,17 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	//~ End IAbilitySystemInterface Interface
 
+	//~ Begin IIndicatorTargetInterface
+	virtual ELMSIndicatorType GetIndicatorType_Implementation() const override;
+	virtual bool ShouldShowIndicator_Implementation() const override;
+	//~ End IIndicatorTargetInterface
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-
-	void DebugTestInteract(AActor* Target);
 
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
@@ -132,12 +154,19 @@ protected:
 	void HandleHealthZero(const FGameplayEffectModCallbackData& Data);
 	void HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data);
 
+	/** 마우스 휠 클릭 입력 처리: 카메라 중앙(크로스헤어) 기준 라인트레이스로 핑 위치 계산 */
+	void RequestPing(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestPing(FVector_NetQuantize PingLocation);
+
 	/** 서버/클라 공통 ASC 초기화 */
 	void InitAbilityActorInfo();
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
