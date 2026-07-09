@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BTTask_AttackReset.h"
-#include "BehaviorTree/BlackboardComponent.h"
-
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTTask_AttackReset::UBTTask_AttackReset()

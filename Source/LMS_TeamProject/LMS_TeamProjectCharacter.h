@@ -51,6 +51,9 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayEffect> DeadEffect;
 
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentReviveTarget = nullptr;
+
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -88,6 +91,9 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UInputAction* DashAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* PrimaryAction;
 
 	/** Ping Input Action (마우스 휠 클릭) */
@@ -101,6 +107,20 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	/** 핑 라인트레이스 최대 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = "Ping", meta = (AllowPrivateAccess = "true"))
 	float PingTraceDistance = 5000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SecondaryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* WeaponSkillAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction;
+
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Revive")
+	float ReviveTraceDistance = 250.f;
 
 public:
 	ALMS_TeamProjectCharacter();
@@ -150,6 +170,9 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
+	private:
+		FTimerHandle ReviveTraceTimerHandle;
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -158,5 +181,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	ULMSWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
+
+	TObjectPtr<AActor> GetCurrentReviveTarget() const { return CurrentReviveTarget; }
+
+	void TraceForReviveTarget();
 };
 
