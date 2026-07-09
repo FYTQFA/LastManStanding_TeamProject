@@ -114,25 +114,6 @@ bool UAbilityTask_WaitReviveHold::ValidateConditions() const
 		return false;
 	}
 
-	// [3] 벽 막힘 — 시전자와 대상 사이가 가려지면 취소 (불필요하면 이 블록만 제거)
-	if (UWorld* World = GetWorld())
-	{
-		FHitResult Hit;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(Rescuer);   // 대상은 무시하지 않음(맞아야 하므로)
-
-		const bool bBlocked = World->LineTraceSingleByChannel(
-			Hit,
-			Rescuer->GetActorLocation(),
-			Target->GetActorLocation(),
-			ECC_Visibility, Params);
-
-		// 뭔가에 막혔는데 그게 대상이 아니면 → 사이에 벽
-		if (bBlocked && Hit.GetActor() != Target)
-		{
-			return false;
-		}
-	}
 
 	return true;
 }

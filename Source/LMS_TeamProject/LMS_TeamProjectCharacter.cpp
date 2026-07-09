@@ -14,6 +14,7 @@
 #include "LMSAttributeSet.h"
 #include "LMS_TeamProjectPlayerState.h"
 #include "LMSGameplayAbility.h"
+#include "InteractionDetectorComponent.h"
 #include "GameplayEffect.h"
 #include "Weapons/LMSWeaponComponent.h"
 
@@ -61,7 +62,8 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
-
+	InteractionDetector = CreateDefaultSubobject<UInteractionDetectorComponent>(TEXT("InteractionDetector"));
+	InteractionDetector->SetupAttachment(RootComponent);
 
 
 }
@@ -203,7 +205,7 @@ void ALMS_TeamProjectCharacter::OnAbilityInputPressed(ELMSAbilityInputID InputID
 	// ★ 들어온 게 Interact면, 대상한테 물어서 실제 InputID로 치환
 	if (InputID == ELMSAbilityInputID::Interact)
 	{
-		AActor* Target = CurrentReviveTarget;
+		AActor* Target = InteractionDetector->GetCurrentTarget();
 		if (!Target || !Target->Implements<ULMSInteractableInterface>())
 		{
 			return;
@@ -345,51 +347,6 @@ void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCa
 
 }
 
-void ALMS_TeamProjectCharacter::TraceForReviveTarget()
-{
-	// 로컬 컨트롤 플레이어만 트레이스 (남의 화면 기준은 의미 없음)
-	if (!IsLocallyControlled())
-	{
-		return;
-	}
-
-	const FVector Start = GetActorLocation();
-	const FVector End = Start + GetActorForwardVector() * ReviveTraceDistance;
-
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);   // 나 자신 무시
-
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(
-		Hit, Start, End, ECC_Pawn, Params);
-
-	// 디버그 시각화
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.2f, 0, 1.f);
-	if (bHit)
-	{
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 10.f, 8, FColor::Green, false, 0.2f);
-	}
-
-	// 맞은 대상이 다운 상태(state.Incapacitated)면 부활 후보로 확정
-	AActor* NewTarget = nullptr;
-	if (bHit && Hit.GetActor())
-	{
-		if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(Hit.GetActor()))
-		{
-			if (UAbilitySystemComponent* TargetASC = ASI->GetAbilitySystemComponent())
-			{
-				if (TargetASC->HasMatchingGameplayTag(
-					FGameplayTag::RequestGameplayTag("state.Incapacitated")))
-				{
-					NewTarget = Hit.GetActor();
-				}
-			}
-		}
-	}
-
-	CurrentReviveTarget = NewTarget;
-}
-
 bool ALMS_TeamProjectCharacter::CanInteract_Implementation(AActor* Interactor) const
 {
 	if (!Interactor || Interactor == this)
@@ -402,7 +359,10 @@ bool ALMS_TeamProjectCharacter::CanInteract_Implementation(AActor* Interactor) c
 	static const FGameplayTag IncapTag =
 		FGameplayTag::RequestGameplayTag(FName("state.Incapacitated"));
 
-	return ASC->HasMatchingGameplayTag(IncapTag);
+	static const FGameplayTag BeingRevivedTag =
+		FGameplayTag::RequestGameplayTag(FName("state.BeingRevived"));
+
+	return ASC->HasMatchingGameplayTag(IncapTag) && !ASC->HasMatchingGameplayTag(BeingRevivedTag);
 }
 
 FGameplayTag ALMS_TeamProjectCharacter::GetInteractionType_Implementation() const
@@ -430,10 +390,6 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	GetWorldTimerManager().SetTimer(
-		ReviveTraceTimerHandle, this,
-		&ALMS_TeamProjectCharacter::TraceForReviveTarget,
-		0.15f, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

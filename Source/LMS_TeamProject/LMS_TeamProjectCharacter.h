@@ -16,6 +16,7 @@ class UInputMappingContext;
 class UInputAction;
 class UAbilitySystemComponent;
 class ULMSAttributeSet;
+class UInteractionDetectorComponent;
 class UGameplayAbility;
 class ULMSWeaponComponent;
 struct FInputActionValue;
@@ -51,8 +52,8 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UGameplayEffect> DeadEffect;
 
-	UPROPERTY()
-	TObjectPtr<AActor> CurrentReviveTarget = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Interaction , meta = (AllowPrivateAccess = "true"))
+	UInteractionDetectorComponent* InteractionDetector;
 
 	UPROPERTY()
 	ELMSAbilityInputID CachedInteractInputID = ELMSAbilityInputID::None;
@@ -102,11 +103,6 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SecondaryAction;
 
-
-
-	UPROPERTY(EditDefaultsOnly, Category = "Revive")
-	float ReviveTraceDistance = 250.f;
-
 public:
 	ALMS_TeamProjectCharacter();
 
@@ -145,9 +141,6 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
-	private:
-		FTimerHandle ReviveTraceTimerHandle;
-
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -157,14 +150,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	ULMSWeaponComponent* GetWeaponComponent() const { return WeaponComponent; }
 
-	TObjectPtr<AActor> GetCurrentReviveTarget() const { return CurrentReviveTarget; }
-
-	void TraceForReviveTarget();
-
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
 
 	virtual FGameplayTag GetInteractionType_Implementation() const override;
 
 	virtual int32 GetInteractInputID_Implementation() const override;
+
+	UInteractionDetectorComponent* GetInteractionDetector() { return InteractionDetector; }
 };
 
