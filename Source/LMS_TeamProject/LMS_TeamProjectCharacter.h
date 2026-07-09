@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "AbilitySystemInterface.h"
+#include "LMSInteractableInterface.h"
 #include "LMSGameplayAbility.h"
 #include "LMS_TeamProjectCharacter.generated.h"
 
@@ -22,7 +23,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterface
+class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterface , public ILMSInteractableInterface
 {
 	GENERATED_BODY()
 
@@ -52,6 +53,9 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 
 	UPROPERTY()
 	TObjectPtr<AActor> CurrentReviveTarget = nullptr;
+
+	UPROPERTY()
+	ELMSAbilityInputID CachedInteractInputID = ELMSAbilityInputID::None;
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -117,6 +121,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void DebugTestInteract(AActor* Target);
+
 	/** Grants DefaultAbilities to the AbilitySystemComponent. Server only. */
 	void GiveDefaultAbilities();
 	/** Applies DefaultEffects to self. Server only. */
@@ -154,5 +160,11 @@ public:
 	TObjectPtr<AActor> GetCurrentReviveTarget() const { return CurrentReviveTarget; }
 
 	void TraceForReviveTarget();
+
+	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+
+	virtual FGameplayTag GetInteractionType_Implementation() const override;
+
+	virtual int32 GetInteractInputID_Implementation() const override;
 };
 

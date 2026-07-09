@@ -199,6 +199,26 @@ void ALMS_TeamProjectCharacter::OnSpeedChanged(const FOnAttributeChangeData& Dat
 
 void ALMS_TeamProjectCharacter::OnAbilityInputPressed(ELMSAbilityInputID InputID)
 {
+
+	// ★ 들어온 게 Interact면, 대상한테 물어서 실제 InputID로 치환
+	if (InputID == ELMSAbilityInputID::Interact)
+	{
+		AActor* Target = CurrentReviveTarget;
+		if (!Target || !Target->Implements<ULMSInteractableInterface>())
+		{
+			return;
+		}
+		if (!ILMSInteractableInterface::Execute_CanInteract(Target, this))
+		{
+			return;
+		}
+
+		InputID = static_cast<ELMSAbilityInputID>(
+			ILMSInteractableInterface::Execute_GetInteractInputID(Target));
+
+		CachedInteractInputID = InputID;   // Released 때 쓸 것
+	}
+
 	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input pressed: %d"), static_cast<int32>(InputID));
 
 	if (AbilitySystemComponent)
@@ -238,10 +258,23 @@ void ALMS_TeamProjectCharacter::OnAbilityInputReleased(ELMSAbilityInputID InputI
 {
 	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input released: %d"), static_cast<int32>(InputID));
 
+	// ★ Interact로 들어오면, Pressed 때 켠 그 InputID로 치환
+	if (InputID == ELMSAbilityInputID::Interact)
+	{
+		if (CachedInteractInputID == ELMSAbilityInputID::None)
+		{
+			return;   // 애초에 활성화 안 됐음
+		}
+		InputID = CachedInteractInputID;
+		CachedInteractInputID = ELMSAbilityInputID::None;
+	}
+
+	UE_LOG(LogTemplateCharacter, Log, TEXT("Ability input released: %d"), static_cast<int32>(InputID));
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->AbilityLocalInputReleased((int32)InputID);
 	}
+
 	else
 	{
 		UE_LOG(LogTemplateCharacter, Warning, TEXT("Ability input release ignored because AbilitySystemComponent is null."));
@@ -357,6 +390,33 @@ void ALMS_TeamProjectCharacter::TraceForReviveTarget()
 	CurrentReviveTarget = NewTarget;
 }
 
+bool ALMS_TeamProjectCharacter::CanInteract_Implementation(AActor* Interactor) const
+{
+	if (!Interactor || Interactor == this)
+		return false;
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC)
+		return false;
+
+	static const FGameplayTag IncapTag =
+		FGameplayTag::RequestGameplayTag(FName("state.Incapacitated"));
+
+	return ASC->HasMatchingGameplayTag(IncapTag);
+}
+
+FGameplayTag ALMS_TeamProjectCharacter::GetInteractionType_Implementation() const
+{
+	static const FGameplayTag ReviveType =
+		FGameplayTag::RequestGameplayTag(FName("Interaction.Revive"));
+	return ReviveType;
+}
+
+int32 ALMS_TeamProjectCharacter::GetInteractInputID_Implementation() const
+{
+	return static_cast<int32>(ELMSAbilityInputID::Interact_Revive);
+}
+
 void ALMS_TeamProjectCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -466,4 +526,19 @@ void ALMS_TeamProjectCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+// 아무 액터나 대상으로 던져보기
+void ALMS_TeamProjectCharacter::DebugTestInteract(AActor* Target)
+{
+	if (!Target) return;
+
+	if (!Target->Implements<ULMSInteractableInterface>())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: 인터페이스 미구현"), *GetNameSafe(Target));
+		return;
+	}
+
+	const bool bCan = ILMSInteractableInterface::Execute_CanInteract(Target, this);
+	UE_LOG(LogTemp, Log, TEXT("%s: CanInteract=%d"), *GetNameSafe(Target), bCan);
 }
