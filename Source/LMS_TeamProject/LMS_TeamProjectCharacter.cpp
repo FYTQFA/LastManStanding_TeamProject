@@ -16,6 +16,9 @@
 #include "LMSGameplayAbility.h"
 #include "GameplayEffect.h"
 #include "Weapons/LMSWeaponComponent.h"
+#include "PingMarker.h"
+#include "GameplayTagContainer.h"
+#include "UI/IndicatorManagerComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -103,6 +106,13 @@ void ALMS_TeamProjectCharacter::InitAbilityActorInfo()
 
 	// ★ 핵심: Owner=PlayerState, Avatar=이 캐릭터
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+
+	// 인디케이터 시스템이 팀원(녹색)/적(빨강)을 구분할 때 사용하는 팀 태그입니다.
+	static const FGameplayTag TeamPlayerTag = FGameplayTag::RequestGameplayTag(FName("Team.Player"));
+	if (HasAuthority() && !AbilitySystemComponent->HasMatchingGameplayTag(TeamPlayerTag))
+	{
+		AbilitySystemComponent->AddReplicatedLooseGameplayTag(TeamPlayerTag);
+	}
 
 	if (WeaponComponent)
 	{
@@ -312,7 +322,7 @@ void ALMS_TeamProjectCharacter::HandleIncapHealthZero(const FGameplayEffectModCa
 
 void ALMS_TeamProjectCharacter::BeginPlay()
 {
-	// Call the base class  
+	// Call the base class
 	Super::BeginPlay();
 
 	//Add Input Mapping Context
@@ -323,7 +333,48 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	
+
+	// 로컬 플레이어의 인디케이터 시스템에 자신을 팀원(녹색)으로 등록합니다.
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->RegisterTarget(this, ELMSIndicatorType::Ally);
+		}
+	}
+}
+
+void ALMS_TeamProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (UIndicatorManagerComponent* IndicatorManager = LocalPC->FindComponentByClass<UIndicatorManagerComponent>())
+		{
+			IndicatorManager->UnregisterTarget(this);
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+ELMSIndicatorType ALMS_TeamProjectCharacter::GetIndicatorType_Implementation() const
+{
+	return ELMSIndicatorType::Ally;
+}
+
+bool ALMS_TeamProjectCharacter::ShouldShowIndicator_Implementation() const
+{
+	// 로컬 플레이어 자기 자신은 인디케이터로 표시하지 않습니다.
+	if (const APlayerController* LocalPC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		if (LocalPC->GetPawn() == this)
+		{
+			return false;
+		}
+	}
+
+	static const FGameplayTag DeadTag = FGameplayTag::RequestGameplayTag(FName("state.Dead"));
+	return !AbilitySystemComponent || !AbilitySystemComponent->HasMatchingGameplayTag(DeadTag);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -359,6 +410,12 @@ void ALMS_TeamProjectCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		else
 		{
 			UE_LOG(LogTemplateCharacter, Warning, TEXT("PrimaryAction is not assigned on %s."), *GetNameSafe(this));
+		}
+
+		// Ping (마우스 휠 클릭)
+		if (PingAction)
+		{
+			EnhancedInputComponent->BindAction(PingAction, ETriggerEvent::Started, this, &ALMS_TeamProjectCharacter::RequestPing);
 		}
 	}
 	else
@@ -401,4 +458,38 @@ void ALMS_TeamProjectCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ALMS_TeamProjectCharacter::RequestPing(const FInputActionValue& Value)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// 1인칭/3인칭 무관하게 실제 카메라(크로스헤어) 기준으로 라인트레이스합니다.
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	const FVector TraceEnd = CameraLocation + CameraRotation.Vector() * PingTraceDistance;
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Ping), false, this);
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, CameraLocation, TraceEnd, ECC_Visibility, Params);
+	const FVector PingLocation = bHit ? Hit.Location : TraceEnd;
+
+	Server_RequestPing(PingLocation);
+}
+
+void ALMS_TeamProjectCharacter::Server_RequestPing_Implementation(FVector_NetQuantize PingLocation)
+{
+	if (!PingMarkerClass)
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("PingMarkerClass is not assigned on %s."), *GetNameSafe(this));
+		return;
+	}
+
+	const FTransform SpawnTransform(FRotator::ZeroRotator, PingLocation);
+	GetWorld()->SpawnActor<APingMarker>(PingMarkerClass, SpawnTransform);
 }

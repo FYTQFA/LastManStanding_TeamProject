@@ -2,6 +2,7 @@
 
 
 #include "BTTask_AttackReset.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 
