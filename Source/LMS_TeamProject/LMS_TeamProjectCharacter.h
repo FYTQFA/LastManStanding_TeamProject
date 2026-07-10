@@ -126,6 +126,7 @@ protected:
 	virtual void OnRep_PlayerState() override;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	void TakeDamage(float Damage);
 
 public:

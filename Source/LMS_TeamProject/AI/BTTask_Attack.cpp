@@ -4,7 +4,7 @@
 #include "BTTask_Attack.h"
 #include "AIController.h"
 #include "GameFramework/Character.h"
-#include "BaseEnemyCharacter.h"
+#include "../BaseEnemyCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -39,7 +39,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	OwningComp = &OwnerComp;
 
 
-	Character->Destroy();
+	//Character->Destroy();
 
 	return EBTNodeResult::Succeeded;
 }

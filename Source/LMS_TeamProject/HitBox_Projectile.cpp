@@ -90,4 +90,13 @@ void AHitBox_Projectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 			Destroy();
 		}
 	}
+	/*else
+	{
+		ALMS_TeamProjectCharacter* Character = Cast<ALMS_TeamProjectCharacter>(Owner);
+		ULMSWeaponComponent* WeaponData = Character->GetWeaponComponent();
+		if (WeaponData)
+		{
+			WeaponData
+		}
+	}*/
 }
