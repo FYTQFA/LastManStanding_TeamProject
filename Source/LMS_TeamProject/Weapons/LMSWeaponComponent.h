@@ -9,7 +9,10 @@
 class ALMSWeaponBase;
 class ACharacter;
 class UAbilitySystemComponent;
+class UCameraComponent;
 class UDataTable;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChanged, int32, AmmoInMagazine, int32, ReserveAmmo);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class LMS_TEAMPROJECT_API ULMSWeaponComponent : public UActorComponent
@@ -70,10 +73,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool IsAiming() const { return bIsAiming; }
 
+	UPROPERTY(BlueprintAssignable, Category = "Weapon|Ammo")
+	FOnWeaponAmmoChanged OnAmmoChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	bool TryConsumeAmmo(int32 AmmoCost = 1, bool bReloadIfEmpty = true);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Skill")
+	void PerformMeleeSkillSweep(float DamageMultiplier, float RangeMultiplier, float TraceRadius, bool bDrawDebugTrace);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ranged")
+	void FireRangedShot(float DamageMultiplier, float RangeMultiplier, bool bDrawDebugTrace);
+
 protected:
 	virtual void BeginPlay() override;
 
 	ACharacter* GetOwnerCharacter() const;
+	UCameraComponent* GetOwnerCameraComponent() const;
 	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
 	void GrantCurrentWeaponAbilities();
 	void ClearGrantedWeaponAbilities();
@@ -86,6 +102,7 @@ protected:
 	void StopAim();
 	bool CanReload() const;
 	void FinishReload();
+	void BroadcastAmmoChanged();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UDataTable* WeaponDataTable;
@@ -99,8 +116,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Melee")
 	float MeleeTraceRadius = 80.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim")
+	float AimFOV = 65.f;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|Aim")
+	float DefaultFOV = 90.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Debug")
 	bool bDrawDebugMeleeTrace = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Debug")
+	bool bDrawDebugRangedTrace = true;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
 	ALMSWeaponBase* CurrentWeapon;
