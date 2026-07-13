@@ -2,6 +2,7 @@
 
 #include "BTService_SearchTarget.h"
 #include "AIController.h"
+#include "../LMS_TeamProjectCharacter.h"
 #include "GameFramework/Character.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -35,7 +36,7 @@ void UBTService_SearchTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 	AActor* FoundCharacter = nullptr;
 	for (AActor* Actor : SightedActors)
 	{
-		if (Actor && Actor->IsA<ACharacter>())
+		if (Actor && Actor->IsA<ALMS_TeamProjectCharacter>())
 		{
 			FoundCharacter = Actor;
 			break;
