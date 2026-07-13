@@ -10,7 +10,17 @@ void UDataTableSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (!EnemyDataTable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UDataTableSubSystem::Initialize - EnemyDataTable is not set. Call SetEnemyDataTable() (e.g. from GameInstance's Event Init)."));
+		static const TCHAR* FallbackTablePath = TEXT("/Game/KCH/DataTable/DT_MonterData.DT_MonterData");
+		EnemyDataTable = LoadObject<UDataTable>(nullptr, FallbackTablePath);
+
+		if (EnemyDataTable)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UDataTableSubSystem::Initialize - SetEnemyDataTable() was not called; loaded fallback table '%s'."), FallbackTablePath);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("UDataTableSubSystem::Initialize - EnemyDataTable is not set and fallback load failed. Call SetEnemyDataTable() (e.g. from GameInstance's Event Init)."));
+		}
 	}
 }
 

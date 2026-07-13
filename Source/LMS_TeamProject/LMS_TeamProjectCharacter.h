@@ -154,6 +154,10 @@ protected:
 	void HandleHealthZero(const FGameplayEffectModCallbackData& Data);
 	void HandleIncapHealthZero(const FGameplayEffectModCallbackData& Data);
 
+	// TakeDamage에서 ApplyModToAttribute 사용 시 PostGameplayEffectExecute가 호출되지 않아
+	// OnHealthZero가 안 불리는 경우를 대비해 직접 호출하는 다운 처리 로직.
+	void TriggerIncapacitated();
+
 	/** 마우스 휠 클릭 입력 처리: 카메라 중앙(크로스헤어) 기준 라인트레이스로 핑 위치 계산 */
 	void RequestPing(const FInputActionValue& Value);
 

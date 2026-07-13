@@ -272,9 +272,20 @@ void ALMS_TeamProjectCharacter::TakeDamage(float Damage)
 
 	UE_LOG(LogTemplateCharacter, Log, TEXT("%s took %.1f damage, remaining Health = %.1f"),
 		*GetName(), Damage, AttributeSet ? AttributeSet->GetHealth() : 0.f);
+
+	// ApplyModToAttribute는 PostGameplayEffectExecute를 거치지 않아 OnHealthZero가 자동으로 안 불림 -> 여기서 직접 체크.
+	if (AttributeSet && AttributeSet->GetHealth() <= 0.f)
+	{
+		TriggerIncapacitated();
+	}
 }
 
 void ALMS_TeamProjectCharacter::HandleHealthZero(const FGameplayEffectModCallbackData& Data)
+{
+	TriggerIncapacitated();
+}
+
+void ALMS_TeamProjectCharacter::TriggerIncapacitated()
 {
 	if (!HasAuthority() || !AbilitySystemComponent || !IncapacitatedEffect)
 	{
