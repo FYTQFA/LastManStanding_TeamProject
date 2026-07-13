@@ -174,6 +174,10 @@ protected:
 		FTimerHandle ReviveTraceTimerHandle;
 
 public:
+	UFUNCTION(BlueprintCallable)
+	void TakeDamage(float Damage);
+
+public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/

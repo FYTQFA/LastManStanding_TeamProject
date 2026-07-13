@@ -40,14 +40,4 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
 	FGameplayTag SpawnEventTag;
 
-//private:
-//	// 발사 시작 위치 계산
-//	FVector GetMuzzleLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
-//
-//	// 타겟 위치 계산 (TargetActor 없을 경우 카메라 전방 사용)
-//	FVector GetTargetLocation(const FGameplayAbilityActorInfo* ActorInfo) const;
-//
-//	// SpawnEventTag 이벤트 수신 시 실제 발사체 Spawn 처리
-//	UFUNCTION()
-//	void OnSpawnEventReceived(FGameplayEventData Payload);
 };
