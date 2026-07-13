@@ -79,6 +79,10 @@ public:
 	FGameplayAttributeData MaxIncapHealth;
 	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, MaxIncapHealth)
 
+		UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(ULMSAttributeSet, Damage)
+
 	//~ Begin UAttributeSet Interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;

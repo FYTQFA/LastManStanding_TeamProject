@@ -2,19 +2,21 @@
 
 #include "UI/LMSCombatHUDPresenterComponent.h"
 #include "UI/UIManagerComponent.h"
+#include "UI/IndicatorManagerComponent.h"
 
 ALMSPlayerController::ALMSPlayerController()
 {
 	// PlayerController가 생성될 때 UI 관련 컴포넌트들도 함께 생성합니다.
 	UIManagerComponent = CreateDefaultSubobject<UUIManagerComponent>(TEXT("UIManagerComponent"));
 	CombatHUDPresenterComponent = CreateDefaultSubobject<ULMSCombatHUDPresenterComponent>(TEXT("CombatHUDPresenterComponent"));
+	IndicatorManagerComponent = CreateDefaultSubobject<UIndicatorManagerComponent>(TEXT("IndicatorManagerComponent"));
 }
 
 void ALMSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 멀티플레이에서 로컬 플레이어 Controller만 UI를 띄워야 합니다.
+	// 멀티플레이에서 로컬 플레이어 Controller만 UI를 생성/표시합니다.
 	if (!IsLocalController())
 	{
 		return;
