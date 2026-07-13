@@ -51,6 +51,26 @@ private:
 	void UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const;
 	void UpdateInteractionVisible(bool bVisible) const;
 
+	// 상호작용 진행률을 HUD에 전달하는 함수입니다.
+	void UpdateInteractionProgress(float Progress) const;
+
+	// 진행 바의 숨김여부를 HUD에 전달하는 함수입니다.
+	void UpdateInteractionProgressVisible(bool bVisible) const;
+
+	// 팀원 상태 데이터를 Combat HUD로 전달합니다.
+	void UpdateTeamMemberStatus(
+		int32 MemberIndex,
+		const FText& Nickname,
+		float CurrentHealth,
+		float MaxHealth,
+		float CurrentShield,
+		float MaxShield
+	) const;
+
+	// 팀원 슬롯의 표시 여부를 Combat HUD로 전달합니다.
+	void UpdateTeamMemberVisible(int32 MemberIndex, bool bVisible) const;
+		
+
 	// GAS Attribute 변경 알림을 받으면 해당 HUD 표시를 다시 갱신합니다.
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
 	void HandleMaxHealthChanged(const FOnAttributeChangeData& Data);

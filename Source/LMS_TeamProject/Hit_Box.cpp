@@ -1,8 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LMS_TeamProjectCharacter.h"
 #include "Hit_Box.h"
+
+#include "LMS_TeamProjectCharacter.h"
 
 // Sets default values
 AHit_Box::AHit_Box()
