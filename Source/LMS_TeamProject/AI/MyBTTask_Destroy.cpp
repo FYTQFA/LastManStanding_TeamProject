@@ -1,8 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "../BaseEnemyCharacter.h"
-#include "AIController.h"
 #include "MyBTTask_Destroy.h"
+
+#include "../Ememy/BaseEnemyCharacter.h"
+#include "AIController.h"
 
 UMyBTTask_Destroy::UMyBTTask_Destroy() {
 	NodeName = TEXT("Destroy");

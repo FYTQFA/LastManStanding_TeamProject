@@ -212,3 +212,58 @@ void ULMSCombatHUDPresenterComponent::UpdateInteractionVisible(bool bVisible) co
 
 	CombatHUDWidget->SetInteractionVisible(bVisible);
 }
+
+void ULMSCombatHUDPresenterComponent::UpdateInteractionProgress(float Progress) const
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetInteractionProgress(Progress);
+}
+
+void ULMSCombatHUDPresenterComponent::UpdateInteractionProgressVisible(bool bVisible) const
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetInteractionProgressVisible(bVisible);
+}
+
+void ULMSCombatHUDPresenterComponent::UpdateTeamMemberStatus(
+	int32 MemberIndex,
+	const FText& Nickname,
+	float CurrentHealth,
+	float MaxHealth,
+	float CurrentShield,
+	float MaxShield) const
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetTeamMemberStatus(
+		MemberIndex,
+		Nickname,
+		CurrentHealth,
+		MaxHealth,
+		CurrentShield,
+		MaxShield
+	);
+}
+
+void ULMSCombatHUDPresenterComponent::UpdateTeamMemberVisible(
+	int32 MemberIndex,
+	bool bVisible) const
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetTeamMemberVisible(MemberIndex, bVisible);
+}

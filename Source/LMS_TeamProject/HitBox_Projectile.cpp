@@ -2,11 +2,11 @@
 
 #include "HitBox_Projectile.h"
 #include "Components/SphereComponent.h"
-#include "BaseEnemyCharacter.h"
+#include "Ememy/BaseEnemyCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "LMSAttributeSet.h"
-#include "EnemyTableRow.h"
+#include "Ememy/EnemyTableRow.h"
 #include "LMS_TeamProjectCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
