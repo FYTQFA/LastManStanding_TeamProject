@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "LMSCombatHUDPresenterComponent.generated.h"
 
+class ULMSWeaponComponent;
 class UAbilitySystemComponent;
 class ULMSAttributeSet;
 class ULMSCombatHUDWidget;
@@ -31,6 +32,15 @@ private:
 	// PlayerState가 가진 AbilitySystemComponent와 AttributeSet을 캐싱합니다.
 	void CacheAttributeSource();
 
+	// 현재 조종 중인 캐릭터가 가진 무기 컴포넌트입니다.
+	// 이 컴포넌트에서 현재 탄약/보유 탄약 값을 받아옵니다.
+	UPROPERTY()
+	TObjectPtr<ULMSWeaponComponent> CachedWeaponComponent;
+
+	// 탄약 델리게이트가 중복 바인딩되는 것을 막는 플래그입니다.
+	// InitializeCombatHUD가 여러 번 호출될 수 있으므로 필요합니다.
+	bool bWeaponDelegatesBound = false;
+
 	// GAS Attribute 값이 바뀔 때 HUD를 갱신하도록 델리게이트를 연결합니다.
 	void BindAttributeDelegates();
 
@@ -47,6 +57,19 @@ private:
 
 	//탄약 보유량을 HUD에 전달합니다.
 	void UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo) const;
+
+	// PlayerController가 조종 중인 Pawn에서 무기 컴포넌트를 찾아 캐싱합니다.
+	// 탄약 UI는 PlayerState가 아니라 실제 캐릭터의 WeaponComponent 값을 사용합니다.
+	void CacheWeaponSource();
+
+	// WeaponComponent의 탄약 변경 델리게이트를 HUD 갱신 함수에 연결합니다.
+	// 총 발사, 장전, 무기 장착으로 탄약 값이 바뀌면 HUD가 자동으로 갱신됩니다.
+	void BindWeaponDelegates();
+
+	// 무기 컴포넌트에서 탄약 변경 알림을 받았을 때 호출됩니다.
+	// 받은 값을 그대로 HUD 블루프린트의 SetAmmo 이벤트로 전달합니다.
+	UFUNCTION()
+	void HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo);
 
 	void UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const;
 	void UpdateInteractionVisible(bool bVisible) const;
