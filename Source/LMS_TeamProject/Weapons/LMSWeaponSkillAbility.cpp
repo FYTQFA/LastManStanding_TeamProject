@@ -20,6 +20,14 @@ void ULMSWeaponSkillAbility::ActivateAbility(
 	}
 
 	ULMSWeaponComponent* WeaponComponent = GetWeaponComponentFromActorInfo();
+	if (WeaponComponent)
+	{
+		float CurrentCooldown = 0.f;
+		float MaxCooldown = 0.f;
+		GetCooldownTimeRemainingAndDuration(Handle, ActorInfo, CurrentCooldown, MaxCooldown);
+		WeaponComponent->StartSkillCooldown(CurrentCooldown, MaxCooldown);
+	}
+
 	if (!WeaponComponent || !ExecuteWeaponSkill(WeaponComponent))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
