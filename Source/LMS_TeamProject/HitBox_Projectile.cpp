@@ -2,14 +2,18 @@
 
 #include "HitBox_Projectile.h"
 #include "Components/SphereComponent.h"
+#include "Ememy/BaseEnemyCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "AbilitySystemComponent.h"
+#include "LMSAttributeSet.h"
+#include "Ememy/EnemyTableRow.h"
+#include "LMS_TeamProjectCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
 AHitBox_Projectile::AHitBox_Projectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	Damage = 10.f;
 	InitialSpeed = 3000.f;
 	MaxSpeed = 3000.f;
 	ArcParam = 0.5f;
@@ -60,8 +64,39 @@ bool AHitBox_Projectile::LaunchToTarget(FVector TargetLocation)
 	return bSuccess;
 }
 
+void AHitBox_Projectile::InitializeProjectile(float InRadius, float InInitSpeed, float InMaxSpeed)
+{
+	CollisionComponent->SetSphereRadius(InRadius);
+	InitialSpeed = InInitSpeed;
+	MaxSpeed = InMaxSpeed;
+
+	ProjectileMovement->InitialSpeed = InInitSpeed;
+	ProjectileMovement->MaxSpeed = InMaxSpeed;
+}
+
 void AHitBox_Projectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	Destroy();
+	ABaseEnemyCharacter* Enemy = Cast<ABaseEnemyCharacter>(Owner);
+	if (Enemy)
+	{
+		const FEnemyTableRow* Data= Enemy->GetEnemyData();
+		float Damage = Data ? Data->Damage : 0;
+		ALMS_TeamProjectCharacter* Target = Cast<ALMS_TeamProjectCharacter>(OtherActor);
+		// todo : TakeDamage
+		if (Target)
+		{
+			Target->TakeDamage(Damage);
+			Destroy();
+		}
+	}
+	/*else
+	{
+		ALMS_TeamProjectCharacter* Character = Cast<ALMS_TeamProjectCharacter>(Owner);
+		ULMSWeaponComponent* WeaponData = Character->GetWeaponComponent();
+		if (WeaponData)
+		{
+			WeaponData
+		}
+	}*/
 }
