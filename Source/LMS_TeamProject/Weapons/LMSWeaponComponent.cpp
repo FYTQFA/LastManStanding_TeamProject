@@ -118,6 +118,7 @@ void ULMSWeaponComponent::UnequipCurrentWeapon()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ReloadTimerHandle);
+		World->GetTimerManager().ClearTimer(SkillCooldownTimerHandle);
 	}
 
 	CurrentWeaponData = FWeaponData();
@@ -126,7 +127,10 @@ void ULMSWeaponComponent::UnequipCurrentWeapon()
 	bIsReloading = false;
 	bIsBlocking = false;
 	bIsAiming = false;
+	SkillCooldownEndTime = 0.f;
+	SkillCooldownDuration = 0.f;
 	BroadcastAmmoChanged();
+	BroadcastSkillCooldownChanged(0.f, 0.f);
 }
 
 void ULMSWeaponComponent::StartAttack()
@@ -237,6 +241,58 @@ bool ULMSWeaponComponent::TryConsumeAmmo(int32 AmmoCost, bool bReloadIfEmpty)
 void ULMSWeaponComponent::BroadcastAmmoChanged()
 {
 	OnAmmoChanged.Broadcast(AmmoInMagazine, ReserveAmmo);
+}
+
+void ULMSWeaponComponent::StartSkillCooldown(float CurrentCooldown, float MaxCooldown)
+{
+	UWorld* World = GetWorld();
+	if (!World || CurrentCooldown <= 0.f || MaxCooldown <= 0.f)
+	{
+		if (World)
+		{
+			World->GetTimerManager().ClearTimer(SkillCooldownTimerHandle);
+		}
+
+		SkillCooldownEndTime = 0.f;
+		SkillCooldownDuration = 0.f;
+		BroadcastSkillCooldownChanged(0.f, FMath::Max(MaxCooldown, 0.f));
+		return;
+	}
+
+	SkillCooldownDuration = MaxCooldown;
+	SkillCooldownEndTime = World->GetTimeSeconds() + CurrentCooldown;
+	BroadcastSkillCooldownChanged(CurrentCooldown, SkillCooldownDuration);
+
+	World->GetTimerManager().SetTimer(
+		SkillCooldownTimerHandle,
+		this,
+		&ULMSWeaponComponent::UpdateSkillCooldown,
+		0.05f,
+		true);
+}
+
+void ULMSWeaponComponent::UpdateSkillCooldown()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const float CurrentCooldown = FMath::Max(0.f, SkillCooldownEndTime - World->GetTimeSeconds());
+	BroadcastSkillCooldownChanged(CurrentCooldown, SkillCooldownDuration);
+
+	if (CurrentCooldown <= 0.f)
+	{
+		World->GetTimerManager().ClearTimer(SkillCooldownTimerHandle);
+		SkillCooldownEndTime = 0.f;
+		SkillCooldownDuration = 0.f;
+	}
+}
+
+void ULMSWeaponComponent::BroadcastSkillCooldownChanged(float CurrentCooldown, float MaxCooldown)
+{
+	OnSkillCooldownChanged.Broadcast(CurrentCooldown, MaxCooldown);
 }
 
 ACharacter* ULMSWeaponComponent::GetOwnerCharacter() const

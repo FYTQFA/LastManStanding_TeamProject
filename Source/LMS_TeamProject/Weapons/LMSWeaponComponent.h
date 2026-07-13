@@ -13,6 +13,7 @@ class UCameraComponent;
 class UDataTable;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChanged, int32, AmmoInMagazine, int32, ReserveAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponSkillCooldownChanged, float, CurrentCooldown, float, MaxCooldown);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class LMS_TEAMPROJECT_API ULMSWeaponComponent : public UActorComponent
@@ -76,8 +77,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Weapon|Ammo")
 	FOnWeaponAmmoChanged OnAmmoChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Weapon|Skill")
+	FOnWeaponSkillCooldownChanged OnSkillCooldownChanged;
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
 	bool TryConsumeAmmo(int32 AmmoCost = 1, bool bReloadIfEmpty = true);
+
+	void StartSkillCooldown(float CurrentCooldown, float MaxCooldown);
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Skill")
 	void PerformMeleeSkillSweep(float DamageMultiplier, float RangeMultiplier, float TraceRadius, bool bDrawDebugTrace);
@@ -103,6 +109,8 @@ protected:
 	bool CanReload() const;
 	void FinishReload();
 	void BroadcastAmmoChanged();
+	void UpdateSkillCooldown();
+	void BroadcastSkillCooldownChanged(float CurrentCooldown, float MaxCooldown);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	UDataTable* WeaponDataTable;
@@ -153,4 +161,8 @@ protected:
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 
 	FTimerHandle ReloadTimerHandle;
+	FTimerHandle SkillCooldownTimerHandle;
+
+	float SkillCooldownEndTime = 0.f;
+	float SkillCooldownDuration = 0.f;
 };
