@@ -29,7 +29,7 @@ public:
 	// 실제 ProgressBar/Text 갱신 로직은 WBP_LJH_CombatHUD 블루프린트에서 구현합니다.
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "LMS|Combat HUD")
 	void SetStamina(float CurrentStamina, float MaxStamina);
-	
+
 	// 현재 스킬 쿨타임을 확인 후 전달합니다.
 	// 실제 ProgressBar/Text 갱신 로직은 WBP_LJH_CombatHUD 블루프린트에서 구현합니다.
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
@@ -47,4 +47,28 @@ public:
 	// SetInteractionVisible은 보일지 숨길지 결정하는 문
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
 	void SetInteractionVisible(bool bVisible);
+
+	// 상호작용 진행률을 HUD ProgressBar에 반영하는 함수입니다.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetInteractionProgress(float Progress);
+
+	// 상호작용 진행 바를 보일지 숨길지 결정하는 함수입니다.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetInteractionProgressVisible(bool bVisible);
+
+	// 팀원 상태 UI에 표시할 닉네임, 체력, 쉴드 값을 HUD 블루프린트로 전달합니다.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetTeamMemberStatus(
+		int32 MemberIndex,
+		const FText& Nickname,
+		float CurrentHealth,
+		float MaxHealth,
+		float CurrentShield,
+		float MaxShield
+	);
+
+	// 지정한 팀원 슬롯을 보이거나 숨기도록 HUD 블루프린트에 전달합니다.
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Combat HUD")
+	void SetTeamMemberVisible(int32 MemberIndex, bool bVisible);
+
 };
