@@ -118,12 +118,23 @@ void ULMSCombatHUDPresenterComponent::BindWeaponDelegates()
 		&ULMSCombatHUDPresenterComponent::HandleAmmoChanged
 	);
 
+	CachedWeaponComponent->OnSkillCooldownChanged.AddDynamic(
+		this,
+		&ULMSCombatHUDPresenterComponent::HandleSkillCooldownChanged
+	);
+
 	bWeaponDelegatesBound = true;
 }
 
 void ULMSCombatHUDPresenterComponent::HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo)
 {
 	UpdateAmmoUI(CurrentAmmo, ReserveAmmo);
+}
+
+// 무기 스킬 쿨타임이 바뀌면 HUD 스킬 쿨타임 UI를 갱신합니다.
+void ULMSCombatHUDPresenterComponent::HandleSkillCooldownChanged(float CurrentCooldown, float MaxCooldown)
+{
+	UpdateSkillCooldownUI(CurrentCooldown, MaxCooldown);
 }
 
 void ULMSCombatHUDPresenterComponent::BindAttributeDelegates()

@@ -71,6 +71,11 @@ private:
 	UFUNCTION()
 	void HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo);
 
+	// 무기 컴포넌트에서 스킬 쿨타임 변경 알림을 받았을 때 호출됩니다.
+	// 받은 현재 쿨타임/전체 쿨타임 값을 HUD 블루프린트의 SetSkillCooldown 이벤트로 전달합니다.
+	UFUNCTION()
+	void HandleSkillCooldownChanged(float CurrentCooldown, float MaxCooldown);
+
 	void UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const;
 	void UpdateInteractionVisible(bool bVisible) const;
 
