@@ -10,6 +10,7 @@ class ULMSAttributeSet;
 class ULMSCombatHUDWidget;
 class UUIManagerComponent;
 struct FOnAttributeChangeData;
+struct FGameplayTag;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class LMS_TEAMPROJECT_API ULMSCombatHUDPresenterComponent : public UActorComponent
@@ -43,6 +44,18 @@ private:
 
 	// GAS Attribute 값이 바뀔 때 HUD를 갱신하도록 델리게이트를 연결합니다.
 	void BindAttributeDelegates();
+
+	// 플레이어의 그로기 태그(state.Incapacitated) 변화 알림을 HUD 갱신 함수에 연결합니다.
+	void BindStateTagDelegates();
+
+	// 현재 그로기 태그 보유 여부를 기준으로 HUD 상태를 즉시 갱신합니다.
+	void UpdateGroggyStateUI() const;
+
+	// state.Incapacitated 태그가 붙거나 제거될 때 호출됩니다.
+	void HandleIncapacitatedTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
+
+	// 그로기 태그 델리게이트가 중복 바인딩되는 것을 막는 플래그입니다.
+	bool bStateTagDelegatesBound = false;
 
 	// 현재 Attribute 값을 기준으로 HUD 전체를 한 번 갱신합니다.
 	void UpdateAllCombatHUD();
@@ -102,6 +115,14 @@ private:
 	// GAS Attribute 변경 알림을 받으면 해당 HUD 표시를 다시 갱신합니다.
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
 	void HandleMaxHealthChanged(const FOnAttributeChangeData& Data);
+
+	// 그로기 체력 값이 바뀌면 HP UI를 갱신합니다.
+	// 그로기 상태일 때는 일반 Health 대신 IncapHealth를 HP 바에 표시합니다.
+	void HandleIncapHealthChanged(const FOnAttributeChangeData& Data);
+
+	// 그로기 최대 체력 값이 바뀌면 HP UI를 갱신합니다.
+	void HandleMaxIncapHealthChanged(const FOnAttributeChangeData& Data);
+
 	void HandleShieldChanged(const FOnAttributeChangeData& Data);
 	void HandleMaxShieldChanged(const FOnAttributeChangeData& Data);
 	void HandleStaminaChanged(const FOnAttributeChangeData& Data);

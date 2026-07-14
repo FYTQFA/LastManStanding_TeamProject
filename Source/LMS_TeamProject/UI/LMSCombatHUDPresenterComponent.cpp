@@ -8,6 +8,7 @@
 #include "../LMS_TeamProjectPlayerState.h"
 #include "LMSCombatHUDWidget.h"
 #include "UIManagerComponent.h"
+#include "GameplayTagContainer.h"
 
 ULMSCombatHUDPresenterComponent::ULMSCombatHUDPresenterComponent()
 {
@@ -29,6 +30,7 @@ void ULMSCombatHUDPresenterComponent::InitializeCombatHUD()
 
 	BindAttributeDelegates();
 	BindWeaponDelegates();
+	BindStateTagDelegates();
 
 	UpdateAllCombatHUD();
 }
@@ -158,8 +160,62 @@ void ULMSCombatHUDPresenterComponent::BindAttributeDelegates()
 		.AddUObject(this, &ULMSCombatHUDPresenterComponent::HandleStaminaChanged);
 	CachedAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(CachedAttributeSet->GetMaxStaminaAttribute())
 		.AddUObject(this, &ULMSCombatHUDPresenterComponent::HandleMaxStaminaChanged);
+	CachedAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(CachedAttributeSet->GetIncapHealthAttribute())
+		.AddUObject(this, &ULMSCombatHUDPresenterComponent::HandleIncapHealthChanged);
+	CachedAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(CachedAttributeSet->GetMaxIncapHealthAttribute())
+		.AddUObject(this, &ULMSCombatHUDPresenterComponent::HandleMaxIncapHealthChanged);
 
 	bAttributeDelegatesBound = true;
+}
+
+void ULMSCombatHUDPresenterComponent::BindStateTagDelegates()
+{
+	if (bStateTagDelegatesBound || !CachedAbilitySystemComponent)
+	{
+		return;
+	}
+
+	const FGameplayTag IncapacitatedTag =
+		FGameplayTag::RequestGameplayTag(TEXT("state.Incapacitated"));
+
+	CachedAbilitySystemComponent->RegisterGameplayTagEvent(
+		IncapacitatedTag,
+		EGameplayTagEventType::NewOrRemoved
+	).AddUObject(
+		this,
+		&ULMSCombatHUDPresenterComponent::HandleIncapacitatedTagChanged
+	);
+
+	bStateTagDelegatesBound = true;
+}
+
+void ULMSCombatHUDPresenterComponent::UpdateGroggyStateUI() const
+{
+	if (!CombatHUDWidget || !CachedAbilitySystemComponent)
+	{
+		return;
+	}
+
+	const FGameplayTag IncapacitatedTag =
+		FGameplayTag::RequestGameplayTag(TEXT("state.Incapacitated"));
+
+	const bool bIsGroggy =
+		CachedAbilitySystemComponent->HasMatchingGameplayTag(IncapacitatedTag);
+
+	CombatHUDWidget->SetGroggyState(bIsGroggy);
+}
+
+void ULMSCombatHUDPresenterComponent::HandleIncapacitatedTagChanged(
+	const FGameplayTag CallbackTag,
+	int32 NewCount)
+{
+	if (!CombatHUDWidget)
+	{
+		return;
+	}
+
+	CombatHUDWidget->SetGroggyState(NewCount > 0);
+	UpdateHealthUI();
 }
 
 void ULMSCombatHUDPresenterComponent::UpdateAllCombatHUD()
@@ -167,6 +223,7 @@ void ULMSCombatHUDPresenterComponent::UpdateAllCombatHUD()
 	UpdateHealthUI();
 	UpdateShieldUI();
 	UpdateStaminaUI();
+	UpdateGroggyStateUI();
 
 	if (CachedWeaponComponent)
 	{
@@ -184,7 +241,29 @@ void ULMSCombatHUDPresenterComponent::UpdateHealthUI()
 		return;
 	}
 
-	CombatHUDWidget->SetHealth(CachedAttributeSet->GetHealth(), CachedAttributeSet->GetMaxHealth());
+	bool bIsGroggy = false;
+
+	if (CachedAbilitySystemComponent)
+	{
+		const FGameplayTag IncapacitatedTag =
+			FGameplayTag::RequestGameplayTag(TEXT("state.Incapacitated"));
+
+		bIsGroggy = CachedAbilitySystemComponent->HasMatchingGameplayTag(IncapacitatedTag);
+	}
+
+	if (bIsGroggy)
+	{
+		CombatHUDWidget->SetHealth(
+			CachedAttributeSet->GetIncapHealth(),
+			CachedAttributeSet->GetMaxIncapHealth()
+		);
+		return;
+	}
+
+	CombatHUDWidget->SetHealth(
+		CachedAttributeSet->GetHealth(),
+		CachedAttributeSet->GetMaxHealth()
+	);
 }
 
 void ULMSCombatHUDPresenterComponent::UpdateShieldUI()
@@ -213,6 +292,16 @@ void ULMSCombatHUDPresenterComponent::HandleHealthChanged(const FOnAttributeChan
 }
 
 void ULMSCombatHUDPresenterComponent::HandleMaxHealthChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateHealthUI();
+}
+
+void ULMSCombatHUDPresenterComponent::HandleIncapHealthChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateHealthUI();
+}
+
+void ULMSCombatHUDPresenterComponent::HandleMaxIncapHealthChanged(const FOnAttributeChangeData& Data)
 {
 	UpdateHealthUI();
 }
