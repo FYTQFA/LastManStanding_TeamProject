@@ -23,6 +23,29 @@ public:
 	// 전투 HUD를 찾고, PlayerState의 Attribute 값을 HUD로 전달할 준비를 합니다.
 	void InitializeCombatHUD();
 
+	// =========================
+	// Interaction UI Public API
+	// =========================
+	// 외부 시스템(캐릭터, Ability, 상호작용 액터)이 호출하는 상호작용 UI 명령입니다.
+	// 외부 코드는 HUD 내부 위젯 구조나 표시 순서를 알 필요 없이,
+	// "상호작용 안내를 보여줘/숨겨줘", "진행바를 보여줘/갱신해줘" 같은 의미 단위로만 호출합니다.
+
+	// 상호작용 안내 UI를 표시합니다.
+	// 내부적으로 문구를 갱신하고, 안내 UI를 보이게 만듭니다.
+	void ShowInteractionPrompt(const FText& KeyText, const FText& InteractionText) const;
+
+	// 상호작용 안내 UI를 숨깁니다.
+	void HideInteractionPrompt() const;
+
+	// 상호작용 진행바를 표시합니다.
+	void ShowInteractionProgress() const;
+
+	// 상호작용 진행률을 HUD에 전달합니다. Progress는 0~1 범위 값입니다.
+	void SetInteractionProgressValue(float Progress) const;
+
+	// 상호작용 진행바를 숨기고 진행률을 0으로 초기화합니다.
+	void HideInteractionProgress() const;
+
 private:
 	// Owner PlayerController가 가진 UIManagerComponent를 찾아 캐싱합니다.
 	void CacheUIManagerComponent();
@@ -88,14 +111,25 @@ private:
 	// 받은 현재 쿨타임/전체 쿨타임 값을 HUD 블루프린트의 SetSkillCooldown 이벤트로 전달합니다.
 	UFUNCTION()
 	void HandleSkillCooldownChanged(float CurrentCooldown, float MaxCooldown);
+	 
+	// ==============================
+	// Interaction UI Internal Updates
+	// ==============================
+	// Presenter 내부에서 WBP_CombatHUD의 BlueprintImplementableEvent를 호출하는 저수준 전달 함수입니다.
+	// 외부 시스템은 가능하면 이 함수들을 직접 부르지 말고,
+	// public Interaction UI API(Show/Hide/Set 계열)를 통해 의미 단위로 요청합니다.
+	// 이렇게 나누면 나중에 UI 표시 절차가 바뀌어도 외부 코드를 고치지 않아도 됩니다.
 
+	// 상호작용 안내 문구만 HUD 블루프린트에 전달합니다.
 	void UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const;
+
+	// 상호작용 안내 UI의 표시 여부만 HUD 블루프린트에 전달합니다.
 	void UpdateInteractionVisible(bool bVisible) const;
 
-	// 상호작용 진행률을 HUD에 전달하는 함수입니다.
+	// 상호작용 진행률 값만 HUD 블루프린트에 전달합니다.
 	void UpdateInteractionProgress(float Progress) const;
 
-	// 진행 바의 숨김여부를 HUD에 전달하는 함수입니다.
+	// 상호작용 진행바의 표시 여부만 HUD 블루프린트에 전달합니다.
 	void UpdateInteractionProgressVisible(bool bVisible) const;
 
 	// 팀원 상태 데이터를 Combat HUD로 전달합니다.

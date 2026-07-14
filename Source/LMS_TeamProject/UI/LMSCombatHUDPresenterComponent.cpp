@@ -347,6 +347,35 @@ void ULMSCombatHUDPresenterComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 Rese
 	CombatHUDWidget->SetAmmo(CurrentAmmo, ReserveAmmo);
 }
 
+void ULMSCombatHUDPresenterComponent::ShowInteractionPrompt(
+	const FText& KeyText,
+	const FText& InteractionText) const
+{
+	UpdateInteractionPrompt(KeyText, InteractionText);
+	UpdateInteractionVisible(true);
+}
+
+void ULMSCombatHUDPresenterComponent::HideInteractionPrompt() const
+{
+	UpdateInteractionVisible(false);
+}
+
+void ULMSCombatHUDPresenterComponent::ShowInteractionProgress() const
+{
+	UpdateInteractionProgressVisible(true);
+}
+
+void ULMSCombatHUDPresenterComponent::SetInteractionProgressValue(float Progress) const
+{
+	UpdateInteractionProgress(FMath::Clamp(Progress, 0.f, 1.f));
+}
+
+void ULMSCombatHUDPresenterComponent::HideInteractionProgress() const
+{
+	UpdateInteractionProgressVisible(false);
+	UpdateInteractionProgress(0.f);
+}
+
 void ULMSCombatHUDPresenterComponent::UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const
 {
 	// 상호작용 시스템이 결정한 표시 문구를 HUD BP 이벤트로 넘깁니다.
