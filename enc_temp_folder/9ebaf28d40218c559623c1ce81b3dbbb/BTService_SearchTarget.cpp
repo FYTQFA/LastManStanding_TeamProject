@@ -42,12 +42,12 @@ void UBTService_SearchTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 			break;
 		}
 	}
-	if (FoundCharacter && BlackboardComp->GetValueAsObject(GetSelectedBlackboardKey()) == nullptr)
+	if (FoundCharacter)
 	{
 		BlackboardComp->SetValueAsObject(GetSelectedBlackboardKey(), FoundCharacter);
 	}
-	/*else
+	else
 	{
 		BlackboardComp->ClearValue(GetSelectedBlackboardKey());
-	}*/
+	}
 }
