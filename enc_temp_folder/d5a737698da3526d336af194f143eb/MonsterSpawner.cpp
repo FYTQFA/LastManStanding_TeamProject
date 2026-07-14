@@ -92,6 +92,12 @@ void AMonsterSpawner::SpawnOneMonster()
 	ABaseEnemyCharacter* NewMonster = GetWorld()->SpawnActor<ABaseEnemyCharacter>(MonsterClass, SpawnLocation, GetActorRotation(), SpawnParams);
 	if (NewMonster)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[MonsterSpawner] Spawned %s | AutoPossessAI=%d | AIControllerClass=%s | Controller after spawn=%s"),
+			*NewMonster->GetName(),
+			(int32)NewMonster->AutoPossessAI,
+			NewMonster->AIControllerClass ? *NewMonster->AIControllerClass->GetName() : TEXT("NULL"),
+			NewMonster->GetController() ? *NewMonster->GetController()->GetName() : TEXT("NULL"));
+
 		AliveMonsters.Add(NewMonster);
 		NewMonster->OnDestroyed.AddDynamic(this, &AMonsterSpawner::OnMonsterDestroyed);
 	}

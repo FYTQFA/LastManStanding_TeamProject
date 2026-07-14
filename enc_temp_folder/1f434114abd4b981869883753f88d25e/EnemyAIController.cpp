@@ -34,6 +34,10 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
+	UE_LOG(LogTemp, Warning, TEXT("[EnemyAIController] OnPossess(%s) called. BehaviorTreeAsset=%s"),
+		InPawn ? *InPawn->GetName() : TEXT("NULL"),
+		BehaviorTreeAsset ? *BehaviorTreeAsset->GetName() : TEXT("NULL"));
+
 	if (!BehaviorTreeAsset)
 	{
 		return;
