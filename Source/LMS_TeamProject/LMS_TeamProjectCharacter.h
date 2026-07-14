@@ -122,19 +122,11 @@ class ALMS_TeamProjectCharacter : public ACharacter, public IAbilitySystemInterf
 	UPROPERTY(EditDefaultsOnly, Category = "Revive")
 	float ReviveTraceDistance = 250.f;
 
-	/** 1인칭에서 완전 투명 처리할 머티리얼 슬롯 이름 목록 (예: M_Murdock_Body, M_Murdock_Head).
-	 * Murdock 스켈레탈 메시는 팔/몸통/머리가 슬롯 단위로 분리되어 있어, 본 계층과 무관하게
-	 * 원하는 부위만 투명화할 수 있습니다. clavicle이 spine의 자식이라 본 숨김으로는 팔만
-	 * 남길 수 없는 엔진 제약을 우회하기 위해 이 방식을 사용합니다. */
-	UPROPERTY(EditDefaultsOnly, Category = "FirstPersonMesh")
-	TArray<FName> MaterialSlotNamesToHide;
-
-	/** 완전 투명 처리에 사용할 Masked 머티리얼 (OpacityMask 스칼라 파라미터를 가지고 있어야 함) */
-	UPROPERTY(EditDefaultsOnly, Category = "FirstPersonMesh")
-	TObjectPtr<class UMaterialInterface> FirstPersonHiddenMaterial;
-
-	UPROPERTY()
-	TArray<TObjectPtr<class UMaterialInterface>> OriginalMaterialsForHiddenSlots;
+	/** 1인칭 시점 전용 팔 메시 (SK_Murdock_FP_Arms). 카메라에 부착되며 소유 클라이언트에게만 렌더링됩니다.
+	 * 몸통 메시(GetMesh())는 반대로 소유 클라이언트에게는 숨김 처리되어, 다른 클라이언트에게는
+	 * 기존 3인칭 몸통이, 본인 화면에는 이 팔 메시만 보이게 됩니다. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "FirstPersonMesh", meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* Mesh1P;
 
 public:
 	ALMS_TeamProjectCharacter();
@@ -204,8 +196,12 @@ public:
 
 	void TraceForReviveTarget();
 
-	/** 로컬 플레이어(본인) 시점에서만 몸통/머리를 숨기고 팔만 보이게 합니다. 다른 클라이언트에는 영향 없음. */
+	/** Returns Mesh1P subobject (1인칭 전용 팔 메시) **/
+	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
+	/** Mesh1P(1인칭 팔 메시)를 NewParent에 재부착합니다. 블루프린트의 BeginPlay에서
+	 * FirstPersonCamera 컴포넌트 참조를 직접 가져와 이 함수에 넘겨 호출하세요. */
 	UFUNCTION(BlueprintCallable, Category = "FirstPersonMesh")
-	void SetFirstPersonArmsOnlyVisibility(bool bArmsOnly);
+	void AttachMesh1PTo(USceneComponent* NewParent);
 };
 

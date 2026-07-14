@@ -66,9 +66,19 @@ ALMS_TeamProjectCharacter::ALMS_TeamProjectCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
+	// 1인칭 전용 팔 메시: 실제 부착은 BeginPlay에서 블루프린트의 FirstPersonCamera로 재부착됩니다
+	// (블루프린트 전용 컴포넌트라 생성자 시점엔 참조할 수 없음). 여기서는 임시로 캡슐에 붙여둡니다.
+	// 메시/AnimBlueprint(SK_Murdock_FP_Arms, NewAnimBlueprint)는 파생 블루프린트에서 지정합니다.
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh1P"));
+	Mesh1P->SetupAttachment(GetCapsuleComponent());
+	Mesh1P->SetRelativeLocation(FVector(-3.585369f, 0.134412f, -141.269165f));
+	Mesh1P->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
 
-
-
+	// 몸통(3인칭) 메시는 반대로 소유 클라이언트에게는 숨기고, 다른 클라이언트에게만 보이게 합니다.
+	GetMesh()->SetOwnerNoSee(true);
 }
 
 UAbilitySystemComponent* ALMS_TeamProjectCharacter::GetAbilitySystemComponent() const
@@ -408,17 +418,20 @@ void ALMS_TeamProjectCharacter::BeginPlay()
 		}
 	}
 
-	// 본인이 조작 중인 캐릭터일 때만 몸통/머리를 숨기고 팔만 보이게 합니다.
-	// 다른 클라이언트의 화면에는 영향을 주지 않는 로컬 전용 처리입니다.
-	if (IsLocallyControlled() && IsPlayerControlled())
-	{
-		SetFirstPersonArmsOnlyVisibility(true);
-	}
-
 	GetWorldTimerManager().SetTimer(
 		ReviveTraceTimerHandle, this,
 		&ALMS_TeamProjectCharacter::TraceForReviveTarget,
 		0.15f, true);
+}
+
+void ALMS_TeamProjectCharacter::AttachMesh1PTo(USceneComponent* NewParent)
+{
+	if (!Mesh1P || !NewParent)
+	{
+		return;
+	}
+
+	Mesh1P->AttachToComponent(NewParent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void ALMS_TeamProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -432,53 +445,6 @@ void ALMS_TeamProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason
 	}
 
 	Super::EndPlay(EndPlayReason);
-}
-
-void ALMS_TeamProjectCharacter::SetFirstPersonArmsOnlyVisibility(bool bArmsOnly)
-{
-	USkeletalMeshComponent* MeshComponent = GetMesh();
-	if (!MeshComponent || !FirstPersonHiddenMaterial)
-	{
-		return;
-	}
-
-	// clavicle(팔 체인)이 spine의 자식이라 본 숨김으로는 팔만 남길 수 없으므로,
-	// 머티리얼 슬롯 단위(M_Murdock_Body/Head 등)로 완전 투명 처리합니다.
-	// 이 함수는 로컬 컨트롤 캐릭터에서만 호출되므로 다른 클라이언트 화면에는 영향이 없습니다.
-	if (bArmsOnly)
-	{
-		OriginalMaterialsForHiddenSlots.Reset();
-		for (const FName& SlotName : MaterialSlotNamesToHide)
-		{
-			const int32 SlotIndex = MeshComponent->GetMaterialIndex(SlotName);
-			if (SlotIndex == INDEX_NONE)
-			{
-				continue;
-			}
-
-			OriginalMaterialsForHiddenSlots.Add(MeshComponent->GetMaterial(SlotIndex));
-			MeshComponent->SetMaterial(SlotIndex, FirstPersonHiddenMaterial);
-		}
-	}
-	else
-	{
-		int32 OriginalIndex = 0;
-		for (const FName& SlotName : MaterialSlotNamesToHide)
-		{
-			const int32 SlotIndex = MeshComponent->GetMaterialIndex(SlotName);
-			if (SlotIndex == INDEX_NONE)
-			{
-				continue;
-			}
-
-			if (OriginalMaterialsForHiddenSlots.IsValidIndex(OriginalIndex))
-			{
-				MeshComponent->SetMaterial(SlotIndex, OriginalMaterialsForHiddenSlots[OriginalIndex]);
-			}
-			++OriginalIndex;
-		}
-		OriginalMaterialsForHiddenSlots.Reset();
-	}
 }
 
 ELMSIndicatorType ALMS_TeamProjectCharacter::GetIndicatorType_Implementation() const
