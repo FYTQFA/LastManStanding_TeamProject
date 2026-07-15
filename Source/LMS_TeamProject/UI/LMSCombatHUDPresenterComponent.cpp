@@ -2,6 +2,8 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "../Weapons/LMSWeaponComponent.h"
 #include "../LMSAttributeSet.h"
 #include "../LMS_TeamProjectPlayerState.h"
 #include "LMSCombatHUDWidget.h"
@@ -23,7 +25,11 @@ void ULMSCombatHUDPresenterComponent::InitializeCombatHUD()
 	CacheUIManagerComponent();
 	CacheCombatHUDWidget();
 	CacheAttributeSource();
+	CacheWeaponSource();
+
 	BindAttributeDelegates();
+	BindWeaponDelegates();
+
 	UpdateAllCombatHUD();
 }
 
@@ -78,6 +84,48 @@ void ULMSCombatHUDPresenterComponent::CacheAttributeSource()
 	CachedAttributeSet = LMSPlayerState->GetAttributeSet();
 }
 
+void ULMSCombatHUDPresenterComponent::CacheWeaponSource()
+{
+	if (CachedWeaponComponent)
+	{
+		return;
+	}
+
+	const APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	const APawn* ControlledPawn = PlayerController->GetPawn();
+	if (!ControlledPawn)
+	{
+		return;
+	}
+
+	CachedWeaponComponent = ControlledPawn->FindComponentByClass<ULMSWeaponComponent>();
+}
+
+void ULMSCombatHUDPresenterComponent::BindWeaponDelegates()
+{
+	if (bWeaponDelegatesBound || !CachedWeaponComponent)
+	{
+		return;
+	}
+
+	CachedWeaponComponent->OnAmmoChanged.AddDynamic(
+		this,
+		&ULMSCombatHUDPresenterComponent::HandleAmmoChanged
+	);
+
+	bWeaponDelegatesBound = true;
+}
+
+void ULMSCombatHUDPresenterComponent::HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo)
+{
+	UpdateAmmoUI(CurrentAmmo, ReserveAmmo);
+}
+
 void ULMSCombatHUDPresenterComponent::BindAttributeDelegates()
 {
 	if (bAttributeDelegatesBound || !CachedAbilitySystemComponent || !CachedAttributeSet)
@@ -108,6 +156,14 @@ void ULMSCombatHUDPresenterComponent::UpdateAllCombatHUD()
 	UpdateHealthUI();
 	UpdateShieldUI();
 	UpdateStaminaUI();
+
+	if (CachedWeaponComponent)
+	{
+		UpdateAmmoUI(
+			CachedWeaponComponent->GetAmmoInMagazine(),
+			CachedWeaponComponent->GetReserveAmmo()
+		);
+	}
 }
 
 void ULMSCombatHUDPresenterComponent::UpdateHealthUI()
