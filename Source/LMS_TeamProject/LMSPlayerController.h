@@ -7,6 +7,7 @@
 class UUIManagerComponent;
 class ULMSCombatHUDPresenterComponent;
 class UIndicatorManagerComponent;
+class ULMSTeamStatusComponent;
 
 UCLASS()
 class LMS_TEAMPROJECT_API ALMSPlayerController : public APlayerController
@@ -32,4 +33,8 @@ private:
 	// 팀원/적/목표/핑 위치의 오프스크린 인디케이터 좌표를 계산하는 컴포넌트입니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LMS|UI", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UIndicatorManagerComponent> IndicatorManagerComponent;
+
+	// 팀원 목록과 팀원 HP/Shield 값을 HUD 팀원 슬롯에 전달하는 컴포넌트입니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LMS|UI", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<ULMSTeamStatusComponent> TeamStatusComponent;
 };

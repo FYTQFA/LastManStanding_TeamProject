@@ -19,6 +19,7 @@
 #include "PingMarker.h"
 #include "GameplayTagContainer.h"
 #include "UI/IndicatorManagerComponent.h"
+#include "UI/LMSCombatHUDPresenterComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -381,6 +382,31 @@ void ALMS_TeamProjectCharacter::TraceForReviveTarget()
 	}
 
 	CurrentReviveTarget = NewTarget;
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	ULMSCombatHUDPresenterComponent* CombatHUDPresenter =
+		PlayerController->FindComponentByClass<ULMSCombatHUDPresenterComponent>();
+	if (!CombatHUDPresenter)
+	{
+		return;
+	}
+
+	if (CurrentReviveTarget)
+	{
+		CombatHUDPresenter->ShowInteractionPrompt(
+			FText::FromString(TEXT("E")),
+			FText::FromString(TEXT("구조하기"))
+		);
+	}
+	else
+	{
+		CombatHUDPresenter->HideInteractionPrompt();
+	}
 }
 
 void ALMS_TeamProjectCharacter::BeginPlay()

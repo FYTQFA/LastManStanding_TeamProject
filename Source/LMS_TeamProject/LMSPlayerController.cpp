@@ -3,6 +3,7 @@
 #include "UI/LMSCombatHUDPresenterComponent.h"
 #include "UI/UIManagerComponent.h"
 #include "UI/IndicatorManagerComponent.h"
+#include "UI/LMSTeamStatusComponent.h"
 
 ALMSPlayerController::ALMSPlayerController()
 {
@@ -10,6 +11,7 @@ ALMSPlayerController::ALMSPlayerController()
 	UIManagerComponent = CreateDefaultSubobject<UUIManagerComponent>(TEXT("UIManagerComponent"));
 	CombatHUDPresenterComponent = CreateDefaultSubobject<ULMSCombatHUDPresenterComponent>(TEXT("CombatHUDPresenterComponent"));
 	IndicatorManagerComponent = CreateDefaultSubobject<UIndicatorManagerComponent>(TEXT("IndicatorManagerComponent"));
+	TeamStatusComponent = CreateDefaultSubobject<ULMSTeamStatusComponent>(TEXT("TeamStatusComponent"));
 }
 
 void ALMSPlayerController::BeginPlay()
@@ -31,6 +33,11 @@ void ALMSPlayerController::BeginPlay()
 	{
 		CombatHUDPresenterComponent->InitializeCombatHUD();
 	}
+
+	if (TeamStatusComponent)
+	{
+		TeamStatusComponent->InitializeTeamStatus();
+	}
 }
 
 void ALMSPlayerController::OnRep_PlayerState()
@@ -42,5 +49,10 @@ void ALMSPlayerController::OnRep_PlayerState()
 	if (CombatHUDPresenterComponent)
 	{
 		CombatHUDPresenterComponent->InitializeCombatHUD();
+	}
+
+	if (TeamStatusComponent)
+	{
+		TeamStatusComponent->InitializeTeamStatus();
 	}
 }

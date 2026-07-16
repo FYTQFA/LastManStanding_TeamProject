@@ -46,6 +46,28 @@ public:
 	// 상호작용 진행바를 숨기고 진행률을 0으로 초기화합니다.
 	void HideInteractionProgress() const;
 
+	// =========================
+	// Team Member UI Public API
+	// =========================
+	// 외부 팀/파티/PlayerState 시스템이 호출하는 팀원 상태 UI 명령입니다.
+	// 외부 코드는 HUD 내부 위젯 구조를 알 필요 없이,
+	// 지정한 팀원 슬롯을 보여주거나 숨기는 의미 단위로만 호출합니다.
+
+	// 지정한 팀원 슬롯에 닉네임, 체력, 쉴드 값을 표시하고 슬롯을 보이게 만듭니다.
+	// MemberIndex는 WBP_CombatHUD에 만들어둔 팀원 슬롯 번호입니다. 현재 0~2번 슬롯을 사용합니다.
+	void ShowTeamMemberStatus(
+		int32 MemberIndex,
+		const FText& Nickname,
+		float CurrentHealth,
+		float MaxHealth,
+		float CurrentShield,
+		float MaxShield
+	) const;
+
+	// 지정한 팀원 슬롯을 숨깁니다.
+	// 팀원이 없거나, 팀원 정보가 아직 준비되지 않았을 때 사용합니다.
+	void HideTeamMemberStatus(int32 MemberIndex) const;
+
 private:
 	// Owner PlayerController가 가진 UIManagerComponent를 찾아 캐싱합니다.
 	void CacheUIManagerComponent();

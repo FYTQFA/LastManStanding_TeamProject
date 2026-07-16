@@ -376,6 +376,48 @@ void ULMSCombatHUDPresenterComponent::HideInteractionProgress() const
 	UpdateInteractionProgress(0.f);
 }
 
+void ULMSCombatHUDPresenterComponent::ShowTeamMemberStatus(
+	int32 MemberIndex,
+	const FText& Nickname,
+	float CurrentHealth,
+	float MaxHealth,
+	float CurrentShield,
+	float MaxShield) const
+{
+	// 현재 WBP_CombatHUD에는 팀원 슬롯이 0, 1, 2번까지만 준비되어 있습니다.
+	// 잘못된 인덱스가 들어오면 BP까지 넘기지 않고 여기서 막습니다.
+	if (MemberIndex < 0 || MemberIndex > 2)
+	{
+		return;
+	}
+
+	// 팀원 상태 값은 기존 내부 전달 함수로 HUD BP에 넘깁니다.
+	UpdateTeamMemberStatus(
+		MemberIndex,
+		Nickname,
+		CurrentHealth,
+		MaxHealth,
+		CurrentShield,
+		MaxShield
+	);
+
+	// 값 갱신 후 해당 팀원 슬롯을 보이게 만듭니다.
+	UpdateTeamMemberVisible(MemberIndex, true);
+}
+
+void ULMSCombatHUDPresenterComponent::HideTeamMemberStatus(int32 MemberIndex) const
+{
+	// 현재 WBP_CombatHUD에는 팀원 슬롯이 0, 1, 2번까지만 준비되어 있습니다.
+	// 잘못된 인덱스가 들어오면 BP까지 넘기지 않고 여기서 막습니다.
+	if (MemberIndex < 0 || MemberIndex > 2)
+	{
+		return;
+	}
+
+	// 팀원이 없거나 정보가 준비되지 않은 슬롯은 숨깁니다.
+	UpdateTeamMemberVisible(MemberIndex, false);
+}
+
 void ULMSCombatHUDPresenterComponent::UpdateInteractionPrompt(const FText& KeyText, const FText& InteractionText) const
 {
 	// 상호작용 시스템이 결정한 표시 문구를 HUD BP 이벤트로 넘깁니다.
