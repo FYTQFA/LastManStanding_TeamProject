@@ -9,8 +9,11 @@
 class ALMSWeaponBase;
 class ACharacter;
 class UAbilitySystemComponent;
+class UAnimInstance;
+class UAnimMontage;
 class UCameraComponent;
 class UDataTable;
+class USceneComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChanged, int32, AmmoInMagazine, int32, ReserveAmmo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponSkillCooldownChanged, float, CurrentCooldown, float, MaxCooldown);
@@ -91,6 +94,39 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ranged")
 	void FireRangedShot(float DamageMultiplier, float RangeMultiplier, bool bDrawDebugTrace);
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	void StartComboAttack(int32 StartingComboIndex = 1);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	bool RegisterComboInput();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	void OpenComboWindow();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	void CloseComboWindow();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	bool QueueComboSection(UAnimInstance* AnimInstance, UAnimMontage* ComboMontage, FName CurrentSection, FName NextSection, int32 NextComboIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	bool ConsumeBufferedComboInput();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Combo")
+	void ResetCombo();
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Combo")
+	bool IsComboAttacking() const { return bIsComboAttacking; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Combo")
+	bool IsComboWindowOpen() const { return bComboWindowOpen; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Combo")
+	bool HasBufferedComboInput() const { return bComboInputBuffered; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Combo")
+	int32 GetCurrentComboIndex() const { return CurrentComboIndex; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -100,6 +136,8 @@ protected:
 	void GrantCurrentWeaponAbilities();
 	void ClearGrantedWeaponAbilities();
 	void GrantWeaponAbility(TSubclassOf<UGameplayAbility> AbilityClass);
+	ALMSWeaponBase* SpawnWeaponActor(const FWeaponData& WeaponData) const;
+	USceneComponent* FindFirstPersonWeaponAttachComponent() const;
 	void StartMeleeAttack();
 	void StartRangedAttack();
 	void StartBlock();
@@ -121,6 +159,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FName EquippedSocketName = TEXT("hand_rSocket");
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|First Person")
+	bool bSpawnFirstPersonWeaponVisual = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|First Person")
+	FName FirstPersonWeaponAttachComponentName = TEXT("SK_Murdock_FP_Arms");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|First Person")
+	FName FirstPersonEquippedSocketName = TEXT("hand_rSocket");
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Melee")
 	float MeleeTraceRadius = 80.f;
 
@@ -139,6 +186,9 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
 	ALMSWeaponBase* CurrentWeapon;
 
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|First Person")
+	ALMSWeaponBase* FirstPersonWeapon;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon")
 	FWeaponData CurrentWeaponData;
 
@@ -156,6 +206,18 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|State")
 	bool bIsAiming = false;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|Combo")
+	bool bIsComboAttacking = false;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|Combo")
+	bool bComboWindowOpen = false;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|Combo")
+	bool bComboInputBuffered = false;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|Combo")
+	int32 CurrentComboIndex = 0;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Weapon|GAS")
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
