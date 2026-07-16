@@ -4,6 +4,9 @@
 #include "UI/UIManagerComponent.h"
 #include "UI/IndicatorManagerComponent.h"
 #include "UI/LMSTeamStatusComponent.h"
+#include "LMS_TeamProjectCharacter.h"
+#include "LMS_TeamProjectPlayerState.h"
+#include "Weapons/LMSWeaponComponent.h"
 
 ALMSPlayerController::ALMSPlayerController()
 {
@@ -38,6 +41,8 @@ void ALMSPlayerController::BeginPlay()
 	{
 		TeamStatusComponent->InitializeTeamStatus();
 	}
+
+	ShowWeaponSelectionUI();
 }
 
 void ALMSPlayerController::OnRep_PlayerState()
@@ -54,5 +59,76 @@ void ALMSPlayerController::OnRep_PlayerState()
 	if (TeamStatusComponent)
 	{
 		TeamStatusComponent->InitializeTeamStatus();
+	}
+}
+
+void ALMSPlayerController::ShowWeaponSelectionUI()
+{
+	if (!IsLocalController() || !UIManagerComponent)
+	{
+		return;
+	}
+
+	UIManagerComponent->ShowUI(ELMSUIType::WeaponSelect);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+}
+
+void ALMSPlayerController::HideWeaponSelectionUI()
+{
+	if (!IsLocalController() || !UIManagerComponent)
+	{
+		return;
+	}
+
+	UIManagerComponent->HideUI(ELMSUIType::WeaponSelect);
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+	bShowMouseCursor = false;
+}
+
+void ALMSPlayerController::RequestWeaponSelection(FName WeaponID)
+{
+	if (WeaponID.IsNone())
+	{
+		return;
+	}
+
+	ServerRequestWeaponSelection(WeaponID);
+}
+
+void ALMSPlayerController::ServerRequestWeaponSelection_Implementation(FName WeaponID)
+{
+	bool bSuccess = false;
+
+	if (!WeaponID.IsNone())
+	{
+		if (ALMS_TeamProjectPlayerState* LMSPlayerState = GetPlayerState<ALMS_TeamProjectPlayerState>())
+		{
+			LMSPlayerState->SetSelectedWeaponID(WeaponID);
+		}
+
+		ALMS_TeamProjectCharacter* LMSCharacter = Cast<ALMS_TeamProjectCharacter>(GetPawn());
+		if (LMSCharacter)
+		{
+			if (ULMSWeaponComponent* WeaponComponent = LMSCharacter->GetWeaponComponent())
+			{
+				bSuccess = WeaponComponent->EquipWeaponByID(WeaponID);
+			}
+		}
+	}
+
+	ClientHandleWeaponSelectionResult(bSuccess);
+}
+
+void ALMSPlayerController::ClientHandleWeaponSelectionResult_Implementation(bool bSuccess)
+{
+	if (bSuccess)
+	{
+		HideWeaponSelectionUI();
 	}
 }
